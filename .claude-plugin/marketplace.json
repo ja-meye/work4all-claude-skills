@@ -1,0 +1,20 @@
+{
+  "name": "work4all-claude-skills",
+  "owner": {
+    "name": "Jens"
+  },
+  "metadata": {
+    "description": "Private work4all Claude skills"
+  },
+  "plugins": [
+    {
+      "name": "work4all-reporting-skills",
+      "description": "work4all reporting and DevExpress skills",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/fix-folgeseiten-uebertrag-problem"
+      ]
+    }
+  ]
+}
