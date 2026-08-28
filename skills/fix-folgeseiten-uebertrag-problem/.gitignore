@@ -1,0 +1,3 @@
+# Referenz-Reports enthalten internes DB-Schema/SQL-Business-Logik und werden
+# bei Bedarf im Chat bereitgestellt statt im Repository gespeichert.
+*.repx
