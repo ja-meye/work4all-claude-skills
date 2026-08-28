@@ -82,6 +82,49 @@ Nach Auslieferung meldete der Nutzer: das Wort "Übertrag €" erschien zwar kor
 
 ---
 
+## 8. Ein reiner Skript-Diff übersieht Muster (g) komplett — Fix-Lauf war unvollständig, obwohl der Skript-Teil korrekt war
+
+**Was passiert ist:** Im ersten Durchlauf mit Pflicht-Referenzvergleich wurde die Diagnose ausschließlich über einen Diff des dekodierten C#-Hauptskripts geführt (Muster a, c, d, f wurden dabei korrekt erkannt und behoben, inkl. sauberer Validierung). Der Fix wurde als „fertig" ausgeliefert. Der Kunde meldete danach im Test: `tb_ÜbertragOben` hatte weiterhin Höhe 40 statt 50, `xrTable1` in `Sub_POS` hatte weiterhin zwei Zeilen statt einer (`xrTableRow18` war nicht gelöscht), und `Sub_POS` trug weiterhin `KeepTogether="true"`. Alle drei Punkte waren in der bestätigten Referenzdatei bereits korrekt (Muster g) — sie wurden schlicht nicht geprüft, weil sie im Skript-Diff nicht auftauchen: `KeepTogether` ist ein XML-Attribut auf Zeile/Band, die beiden Höhen steckten indirekt im `<Localization>`-Block (siehe Eintrag 6), und die doppelte Zeile ist eine reine Tabellenstruktur-Frage. Nach Nachbesserung (separater Lauf) fiel dem Kunden zusätzlich auf, dass gegenüber der Referenz auch etliche tote Variablen und drei unverdrahtete „Trials"-Methoden im Skript stehen geblieben waren — die Skript-Hygiene (Muster e) war schlicht nicht durchgeführt worden, weil sie zu diesem Zeitpunkt als optional gegolten hatte.
+
+**Was man daraus lernt:** „Ich habe die Referenz mit dem Skript verglichen" ist NICHT dasselbe wie „ich habe die Referenz strukturell vollständig verglichen". Ein Fix-Katalog-Muster kann komplett außerhalb des Skripts leben (reine XML-/Layout-Eigenschaften) und wird von einem reinen Skript-Diff dann grundsätzlich nicht gefunden, egal wie sorgfältig dieser Diff war. Ebenso: Skript-Hygiene als „optional, nur auf Wunsch" einzustufen führt in der Praxis dazu, dass sie in einem hektischen oder fokussierten Lauf schlicht vergessen wird, obwohl die Referenz sie längst enthält.
+
+**Wie man es künftig vermeidet (verbindliche Konsequenz, siehe SKILL.md „Kundenvorgabe"):**
+1. Bei JEDEM Lauf mit Referenzdatei zusätzlich zum Skript-Diff explizit die Pflicht-Checkliste aus SKILL.md Schritt 2 abarbeiten: alle `KeepTogether`-Vorkommen auflisten und abgleichen, alle Höhen/Größen inkl. `<Localization>`-Block der relevanten Elemente abgleichen, Zeilenanzahl kritischer Tabellen abgleichen.
+2. Skript-Hygiene (Muster e) ist ab sofort PFLICHT-Bestandteil jedes Laufs, nicht mehr optional — aber mit klarer Abgrenzung: nur Variablen/Methoden entfernen, die nachweislich (per Textsuche verifiziert) nirgends mehr aktiv gelesen/aufgerufen werden. Variablen, die zu einer erkennbar eigenständigen, anderen Funktionalität gehören (im konkreten Fall: `sum_EKTO_4a/4b/13b/3a` für eine Steuertext-/Sachkonto-Berechnung, die die Referenz durch einen komplett neuen Subreport ersetzt hatte), gehören NICHT zur Hygiene, sondern zu einem eigenständigen, hier bewusst ausgeklammerten Funktionsumbau — diese Abgrenzung muss bei jedem Lauf neu bewusst getroffen werden, nicht pauschal "alles was die Referenz auch entfernt hat" übernehmen.
+3. Ein Fix-Lauf gilt erst als abgeschlossen, wenn beide Punkte (voller struktureller Diff UND Hygiene) durchlaufen wurden — nicht schon, wenn der Skript-Teil sauber validiert.
+
+---
+
+## 9. Verlust des UTF-8-BOM bei einem reinen XML-Bearbeitungsschritt (kein Skript-Reencoding)
+
+**Was passiert ist:** Nach dem ersten Fix-Lauf (Skript-Änderungen, korrekt inkl. BOM zurückgeschrieben) wurden in zwei nachfolgenden Läufen zusätzliche reine XML-Änderungen vorgenommen (KeepTogether-Attribut entfernen, Localization-Werte ändern, eine Tabellenzeile löschen — alles ohne den Skript-Reencoding-Schritt). Dabei wurde die Datei mit `encoding='utf-8-sig'` gelesen (das entfernt beim Lesen automatisch die BOM) und anschließend mit `open(..., 'w', encoding='utf-8', newline='')` zurückgeschrieben, OHNE die BOM manuell wieder voranzustellen. Zwei komplette, an den Kunden ausgelieferte Dateien in Folge hatten dadurch kein BOM mehr (Datei begann direkt mit `<?xml...` statt mit den BOM-Bytes `EF BB BF`). Erst beim dritten Lauf (nach einer erneuten reinen Skript-Änderung, bei der die BOM-Zeile im Code zufällig wieder vorhanden war) fiel per Stichprobenprüfung auf, dass die beiden vorherigen Dateien das BOM verloren hatten.
+
+**Was man daraus lernt:** Der BOM-Verlust passiert lautlos — kein Parse-Fehler, keine sichtbare Diff-Auffälligkeit im Skript- oder XML-Inhalt selbst, weil nur das allererste Zeichen der Datei betroffen ist. Er passiert nicht beim eigentlichen Skript-Escaping-Schritt (der aus `repx-technical-notes.md` bereits die BOM-Regel kennt), sondern gerade bei "kleinen", rein XML-fokussierten Nachbesserungs-Läufen, bei denen man das BOM-Handling leicht vergisst, weil man "ja nur eine Kleinigkeit im XML ändert".
+
+**Wie man es künftig vermeidet:** Nach JEDEM Schreibschritt (nicht nur nach Skript-Änderungen) programmatisch prüfen: `open(datei, 'rb').read(3) == b'\xef\xbb\xbf'`. Diese Prüfung ist jetzt fester Bestandteil der Validierungs-Checkliste (Punkt 9) und muss nach jedem einzelnen Zwischenstand laufen, nicht nur einmal ganz am Ende der Bearbeitungskette. Beim Schreiben selbst: `f.write('﻿' + content)` explizit in jedem Schreibschritt, der aus einer mit `utf-8-sig` gelesenen Zwischendatei erzeugt wird — unabhängig davon, ob dieser Schritt das Skript oder nur die reine XML anfasst.
+
+---
+
+## 10. Falsch-Positiv bei der Scripts-Paritätsprüfung durch ungescopte Regex
+
+**Was passiert ist:** Ein Validierungs-Check der Form „suche `On\w+=\"(\w+)\"` in der kompletten Roh-XML (außerhalb der `ScriptsSource`-Werte)" meldete sowohl in der Zieldatei als auch in der unabhängig davon bestätigten Referenzdatei ein vermeintlich fehlendes Methoden-Symbol namens `false`. Bei näherer Untersuchung stellte sich heraus: Das Attribut `PrintOnEmptyDataSource="false"` auf einem `ReportPrintOptions`-Element enthält als Teilstring zufällig `On...="false"` und wurde von der ungescopten Regex fälschlich als Event-Verdrahtung interpretiert.
+
+**Was man daraus lernt:** Weil der Fund in BEIDEN Dateien (Ziel und Referenz) identisch auftrat, war er kein Hinweis auf einen echten Fehler — aber das ist Glück, kein verlässliches Kriterium. Eine Prüfung, die nicht syntaktisch auf den tatsächlichen Kontext (`<Scripts .../>`-Elemente) beschränkt ist, kann durch zufällige Namensüberschneidungen sowohl Fehlalarme als auch (im ungünstigeren Fall) tatsächliche Lücken verdecken.
+
+**Wie man es künftig vermeidet:** Die Scripts-Paritätsprüfung IMMER zweistufig aufbauen: zuerst alle `<Scripts ... />`-Elemente per eigenem Pattern isolieren, dann NUR innerhalb dieser Treffer nach `On\w+="(\w+)"` suchen. Ein so gescopter Check sollte auf einer sauberen Datei 0 fehlende Methoden melden. Siehe `repx-technical-notes.md`, Abschnitt „XML/Skript-Paritätsregel", und `validation-checklist.md` Punkt 3.
+
+---
+
+## 11. Zeitstempel im Dateinamen war falsch, weil die Session-Umgebung in UTC läuft, nicht in der Zeitzone des Kunden
+
+**Was passiert ist:** Der in SKILL.md vorgeschriebene Zeitstempel wurde mit einem bloßen `date '+%Y-%m-%d_%H-%M'`-Aufruf ohne Zeitzonenangabe erzeugt. Die Session-Umgebung lief dabei in UTC, der Kunde aber in Europe/Berlin (zu diesem Zeitpunkt UTC+2, Sommerzeit) — die erzeugten Zeitstempel waren dadurch durchgängig zwei Stunden zu früh gegenüber der tatsächlichen Uhrzeit beim Kunden.
+
+**Was man daraus lernt:** `date` ohne explizite Zeitzone spiegelt die Zeitzone der Ausführungsumgebung wider, nicht die des Nutzers — das ist bei einer Cloud-Sandbox nicht automatisch dieselbe Zeitzone, auch wenn man es beim Arbeiten leicht annimmt. Der Fehler fällt nicht durch einen Parse- oder Validierungsfehler auf, sondern nur durch einen Soll-Ist-Abgleich der Uhrzeit mit dem Kunden.
+
+**Wie man es künftig vermeidet:** Zeitstempel für Dateinamen IMMER mit expliziter Zielzeitzone erzeugen: `TZ=Europe/Berlin date '+%Y-%m-%d_%H-%M'`. Niemals bloßes `date` ohne `TZ=`-Präfix verwenden, auch wenn die Session-Uhrzeit auf den ersten Blick plausibel wirkt. Siehe SKILL.md Schritt 7.
+
+---
+
 ## (Platzhalter für künftige Einträge)
 
-Beim nächsten Report-Lauf, der etwas Neues zutage fördert, hier als Eintrag Nr. 8 ergänzen — gleiches Format: Was passiert ist / Was man daraus lernt / Wie man es künftig vermeidet.
+Beim nächsten Report-Lauf, der etwas Neues zutage fördert, hier als Eintrag Nr. 12 ergänzen — gleiches Format: Was passiert ist / Was man daraus lernt / Wie man es künftig vermeidet.
