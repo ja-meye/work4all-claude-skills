@@ -13,7 +13,8 @@
       "source": "./",
       "strict": false,
       "skills": [
-        "./skills/fix-folgeseiten-uebertrag-problem"
+        "./skills/fix-folgeseiten-uebertrag-problem",
+        "./skills/neuen-devexpress-listenreport-bauen"
       ]
     }
   ]
