@@ -16,7 +16,9 @@ Jedes Muster ist **verhaltensbasiert** beschrieben — an dem, was der Code tut,
 
 ---
 
-## (b) KeepTogether=false auf einer Preiszeile bei sumCarryoverSum-Nutzung
+## (b) KeepTogether=false auf einer Preiszeile bei sumCarryoverSum-Nutzung — **[ÜBERHOLT, siehe Muster (g)]**
+
+> **Status seit dem zweiten Fix-Durchlauf (28.08., vom Kunden in Visual Studio getestet und bestätigt):** Dieser Ansatz gilt nicht mehr als Standardempfehlung für neue Fälle. In der Praxis hat `KeepTogether=true` auf Zeile + Band zu spürbar unerwünschtem Weißraum am Seitenende geführt und zudem nicht das eigentliche Symptom behoben, das den Kunden gestört hat (siehe Muster (g)). Der Kunde hat `KeepTogether` an beiden Stellen wieder zurückgenommen und stattdessen mit Mindesthöhen gearbeitet. Dieser Textabschnitt bleibt zu Diagnosezwecken stehen (z. B. um eine ältere, noch nach diesem Muster reparierte Report-Variante wiederzuerkennen), aber bei einer NEUEN Anwendung: nicht mehr dieses Muster vorschlagen, sondern direkt Muster (g) prüfen und anwenden.
 
 **Muster:** Der Report verwendet `sumCarryoverSum(...)` für eine Übertragsberechnung, und die Tabellenzeile, die den Preis enthält (typischerweise eine Detail-/Sub-Band-Zeile wie `xrTableRow` innerhalb von `Sub_POS` oder vergleichbar), hat `KeepTogether="false"`.
 
@@ -85,3 +87,32 @@ Jedes Muster ist **verhaltensbasiert** beschrieben — an dem, was der Code tut,
 **Wichtige Nebenbedingung:** Wird ein solches Flag in einem `BeforePrint`-Handler (z. B. beim Start eines neuen Belegs/einer neuen Gruppe) zurückgesetzt, um Sammeldruck mehrerer Belege in einem Lauf abzusichern — bedenken, dass `BeforePrint` in der Generierungsphase läuft, die für das GESAMTE Dokument abgeschlossen ist, bevor die Druckphase (in der `PrintOnPage` und damit das Flag selbst gelesen/gesetzt wird) beginnt. Ein `BeforePrint`-Reset schützt daher zuverlässig nur den Normalfall „ein Beleg pro Reportlauf". Bei echtem Sammeldruck mehrerer Belege in einem einzigen Lauf kann der Reset zu spät greifen; das als bekannte Grenze dokumentieren statt stillschweigend als vollständig gelöst zu behandeln.
 
 **Automatisierungssicherheit:** *Vorschlag mit Rückfrage.* Erfordert eine neue Variable und einen neuen (oder erweiterten) `PrintOnPage`-Handler an einer sorgfältig ausgewählten Kontrollzelle — die Wahl der richtigen Zelle (zuverlässig einmal pro Detailzeile, unabhängig vom Zeilentyp) ist entscheidend und sollte pro Report-Variante bestätigt werden, bevor der Fix angewendet wird.
+
+---
+
+## (g) Mindesthöhen statt KeepTogether gegen Weißraum und abgeschnittene Übertrag-Anzeige
+
+**Ersetzt Muster (b) als aktuelle Standardempfehlung.** Vom Kunden in Visual Studio umgesetzt und in DevExpress bestätigt getestet (28.08.).
+
+**Muster / Symptom:** Zwei zusammenhängende, aber getrennt zu behandelnde Symptome, die beide auftreten können, wenn Muster (b) (`KeepTogether=true` auf Preiszeile/Sub_POS-Band) bereits angewendet wurde oder wenn die Übertrag-oben-Tabelle generell zu knapp bemessen ist:
+
+1. **Zu viel Weißraum am Seitenende.** `KeepTogether=true` auf der Preiszeile und/oder dem `Sub_POS`-Band verschiebt eine komplette Zeile (inkl. langer Artikelbeschreibung) auf die nächste Seite, sobald sie nicht mehr vollständig auf die aktuelle Seite passt — das erzeugt in der Praxis störend viel Leerraum am Ende der vorherigen Seite.
+2. **Abgeschnittene/zu knapp wirkende Übertrag-oben-Anzeige.** Die Tabelle `tb_ÜbertragOben` (im `SubBand` `Sub_UebertragOben`) hat eine zu geringe Mindesthöhe (z. B. 40), wodurch ihr Inhalt in bestimmten Sprachvarianten (längere Texte in EN/FR/NL) oder bei zweizeiligem Inhalt abgeschnitten wirkt.
+
+Zusätzlich, als verwandtes Symptom in manchen Report-Varianten: Die Positionstabelle `xrTable1` innerhalb von `Sub_POS` hat **zwei** Zeilen statt einer (eine vermutlich historische/überzählige erste Zeile plus die eigentliche Datenzeile), was zu Höhen- und Anzeigeproblemen führt.
+
+**Ursache:** Die Kombination aus `KeepTogether=true` (Muster b) zur Absicherung von `sumCarryoverSum` und zu knapp bemessenen festen Höhen führt in Summe zu einem für den Kunden inakzeptablen Layout-Ergebnis. Der in `known-issues.md` Eintrag 4 als "kleineres Übel" akzeptierte Weißraum hat sich in der Praxis als zu störend herausgestellt.
+
+**Fix (alle drei Teile zusammen anwenden):**
+
+1. `KeepTogether` auf der Preiszeile (z. B. `xrTableRow1` in `Sub_POS`) UND auf dem `Sub_POS`-Band selbst wieder auf `false`/Standard zurücksetzen (Attribut entfernen oder explizit `"false"` setzen).
+2. Mindesthöhe von `tb_ÜbertragOben` (und dem umgebenden `SubBand`, z. B. `Sub_UebertragOben`) auf **50** anheben — dabei **nur anheben, nie verringern**: ist bereits ein höherer Wert eingestellt (z. B. 60), diesen unverändert lassen.
+3. Falls `xrTable1` (in `Sub_POS`) zwei Zeilen enthält: die **obere** Zeile löschen, die verbleibende (Daten-)Zeile auf Höhe **55** setzen.
+
+**Wichtiger technischer Hinweis zur Umsetzung:** Im Designer gesetzte `HeightF`-/`SizeF`-/`LocationFloat`-Werte landen nicht zwingend als direktes Attribut auf dem Element selbst, sondern häufig indirekt in einem separaten `<Localization>`-Block (`Component="#Ref-<ZielRef>"`). Vor dem Setzen einer Höhe IMMER auch dort nachsehen (siehe `known-issues.md`, Eintrag 6) — sonst wird eine vermeintlich fehlende Änderung übersehen oder ein neuer, redundanter Wert direkt am Element gesetzt, während der eigentlich wirksame Wert im `<Localization>`-Block unangetastet bleibt.
+
+**Automatisierungssicherheit:**
+- Punkt 1 (KeepTogether zurücknehmen) und Punkt 2 (Mindesthöhe 50): *Vorschlag mit Rückfrage*, außer der Kunde hat für DIESEN Report bereits explizit bestätigt, auf dieses Vorgehen umzusteigen (dann *automatisch sicher*, wie im bestätigten Fall vom 28.08.).
+- Punkt 3 (zweite Zeile in `xrTable1` löschen): *Vorschlag mit Rückfrage* — vor dem Löschen prüfen, ob die obere Zeile wirklich keine eigenständige Funktion hat (z. B. durch Vergleich mit einer bestätigten Referenz, die dieselbe Situation bereits bereinigt hat), nicht blind die erste Zeile löschen nur weil zwei vorhanden sind.
+
+**Offene Frage / nicht abschließend geklärt:** Der genaue Kausal-Zusammenhang zwischen der Rücknahme von `KeepTogether` und dem ursprünglichen Muster-(b)-Risiko (aufgesplittete Preiszeile verfälscht `sumCarryoverSum`) ist nicht erneut aus der DevExpress-Rendering-Pipeline hergeleitet worden — dieser Eintrag dokumentiert den vom Kunden getesteten und für gut befundenen Zustand, nicht einen bewiesenen Mechanismus. Falls nach Anwendung dieses Fixes auf einer neuen Report-Variante ein falscher Übertragswert durch eine aufgesplittete Preiszeile auffällt, ist das ein Hinweis darauf, dass Muster (b) für DIESEN Report doch relevant bleibt und mit dem Kunden gemeinsam abgewogen werden sollte (Weißraum vs. korrekter Wert bei Seitenumbruch mitten in einer Position).

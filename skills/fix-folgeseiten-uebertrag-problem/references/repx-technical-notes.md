@@ -47,3 +47,21 @@ Eingebaute DevExpress-Summenfunktion (verfügbar ab v23.1) für Werte, die über
 ## XML/Skript-Paritätsregel
 
 Jede `<Scripts On[Event]="MethodName" />`-Referenz im XML-Layout-Teil muss einer tatsächlich im zugehörigen `ScriptsSource` definierten Methode entsprechen. Fehlt sie, lädt der Report in DevExpress nicht mehr (oder zumindest nicht fehlerfrei). Nach jeder Methoden-Entfernung im Skript **immer symmetrisch die zugehörige XML-Verdrahtung anpassen** — siehe `validation-checklist.md`, Punkt 3 und 6.
+
+## Der `<Localization>`-Block — indirekte Speicherung von Designer-Werten
+
+Nicht jede im DevExpress-Designer manuell geänderte Eigenschaft landet als direktes XML-Attribut auf dem betroffenen Element. Insbesondere `HeightF`, `SizeF`, `LocationFloat` und teils `Visible` werden häufig stattdessen indirekt in einem separaten `<Localization>`-Element weiter oben in der Datei abgelegt, als Liste von Einträgen der Form:
+
+```xml
+<Item354 Ref="2991" Component="#Ref-1931" Culture="Default" Path="HeightF" Data="40" />
+```
+
+`Component="#Ref-N"` verweist dabei über die `Ref`-Nummer auf das eigentliche Ziel-Element (Band, Table, Control, ...); `Path` ist der Eigenschaftsname; `Data` der aktuell gesetzte Wert. `Culture` ist meist `Default`, kann bei mehrsprachigen Reports aber auch `en`/`fr`/`nl` (o. ä.) sein — dann existieren ggf. MEHRERE Einträge für denselben `Component`-Ref mit unterschiedlicher `Culture`, die unabhängig voneinander gepflegt werden müssen.
+
+**Praktische Konsequenz:** Bei jeder Höhen-/Größen-/Positions-Änderung, die per Diff gegen eine im Designer bearbeitete Datei nachvollzogen werden soll:
+
+1. Zuerst das Ziel-Element selbst auf ein direktes Attribut prüfen (`HeightF="..."`, `SizeF="..."`, etc.).
+2. Zusätzlich IMMER nach `Component="#Ref-<RefDesElements>"` im gesamten Dokument suchen — dort kann der eigentlich wirksame (oder überschreibende) Wert stehen, unabhängig vom direkten Attribut.
+3. Beim eigenen Setzen einer neuen Höhe entsprechend nicht nur das Element-Attribut setzen, sondern auch prüfen/setzen, ob ein passender `<Localization>`-Eintrag existiert bzw. angelegt werden muss.
+
+Ein reiner Element-für-Element-Vergleich der vermuteten Stelle kann diese Änderungen komplett übersehen (weil weder vorher noch nachher ein direktes Attribut existiert) — zuverlässiger ist ein vollständiger, positionsweiser Baumvergleich der GESAMTEN Datei (alle Elemente in Dokumentreihenfolge, `Ref`-Werte beim Vergleich ignorieren), der solche indirekten Änderungen automatisch mit erfasst. Details und ein konkretes Beispiel dazu in `known-issues.md`, Einträge 6 und 7 (dort auch: nicht jede so gefundene Verschiebung ist eine echte Änderung — manche sind harmlose, rein designtime-relevante Umsortierungen).
