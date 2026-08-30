@@ -14,7 +14,8 @@
       "strict": false,
       "skills": [
         "./skills/fix-folgeseiten-uebertrag-problem",
-        "./skills/neuen-devexpress-listenreport-bauen"
+        "./skills/neuen-devexpress-listenreport-bauen",
+        "./skills/neuen-devexpress-report-skill-anlegen"
       ]
     }
   ]

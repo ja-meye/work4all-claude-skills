@@ -1,6 +1,8 @@
 ---
 name: neuen-devexpress-listenreport-bauen
-description: Baut aus einem Mockup (PDF/Bild) und einer bestehenden work4all-DevExpress-.repx-Vorlage einen neuen DevExpress-XtraReports-Listenreport (z.B. Kundenliste, Lieferantenliste, Artikelliste). Erstellt zuerst eine Excel-Feldzuordnungstabelle zur Abstimmung mit dem Fachbereich, übernimmt danach Joins/Query aus einer mitgelieferten SQL- oder Crystal-Reports-Query in eine neue DevExpress-SqlDataSource, und baut die neue .repx mit demselben Parameter-/ID-Filtermuster wie die Vorlage. Unbedingt verwenden, wenn der Nutzer einen neuen work4all-Listenreport auf Basis eines vorhandenen Reports und/oder eines Mockups bauen möchte, wenn er eine Excel-Tabelle zur Feld-/DB-Zuordnung für einen Report erstellen will, wenn er eine alte SQL- oder Crystal-Reports-Query in einen neuen DevExpress-Report übernehmen möchte, oder wenn er allgemein einen "Report-Bauplan", "Feldzuordnung" oder "neuen Listenreport" erwähnt — auch ohne die Wörter "Skill" oder "DevExpress" zu benutzen, z.B. bei "ich habe ein Mockup für einen neuen Report", "welche Felder kommen aus welcher Tabelle", "ich gebe dir die SQL von einem alten Report, bau das in den neuen Report ein".
+description: Baut aus einem Mockup (PDF/Bild) und einer bestehenden work4all-DevExpress-.repx-Vorlage einen neuen DevExpress-Listenreport (z.B. Kundenliste, Lieferantenliste, Artikelliste). Erstellt zuerst eine Excel-Feldzuordnungstabelle zur Abstimmung mit dem Fachbereich, übernimmt danach Joins/Query aus einer SQL- oder Crystal-Reports-Query in eine neue DevExpress-SqlDataSource und baut die neue .repx mit demselben Parameter-/ID-Filtermuster wie die Vorlage. Verwenden, wenn der Nutzer einen neuen work4all-Listenreport auf Basis eines Reports/Mockups bauen will, eine Excel-Feldzuordnung erstellen will, eine alte SQL-/Crystal-Reports-Query übernehmen möchte, oder "Report-Bauplan", "Feldzuordnung" oder "neuen Listenreport" erwähnt — auch ohne die Wörter "Skill" oder "DevExpress", z.B. "ich habe ein Mockup für einen neuen Report", "welche Felder kommen aus welcher Tabelle", "ich gebe dir die SQL von einem alten Report, bau das ein".
+skill_id: DXJ0002
+version: 1.0.0
 ---
 
 # Neuen DevExpress-Listenreport aus Mockup + Vorlage bauen
@@ -69,6 +71,20 @@ Liefere aus:
 1. die neue `.repx`
 2. die (ggf. aktualisierte) Excel-Feldzuordnung als Kontrollliste
 3. eine klare, kurze Zusammenfassung aller offenen Punkte (fehlende Felder, 1:n-Join-Risiken, Datenbank-Namens-Annahmen, angenommene Datentypen) — nicht verschweigen, sondern aktiv benennen, damit der Nutzer gezielt nachliefern kann.
+
+## Skill-ID, Version & Fix-Log-Startpunkt
+
+Diese Skill trägt die ID **DXJ0002** (aktuell Version **1.0.0**). Format und vollständige Registry sind zentral dokumentiert in `work4all-reporting-skills:neuen-devexpress-report-skill-anlegen`, `references/fix-log-format.md` und `references/skill-id-registry.md`.
+
+Jede neu gebaute `.repx` bekommt in Schritt 4 (Layout bauen) ganz oben im eingebetteten Skript einen initialen Log-Block, der die Herkunft der Datei dokumentiert — damit spätere Fix-Skills (z.B. `fix-folgeseiten-uebertrag-problem`) wissen, dass diese Datei maschinell von dieser Skill erzeugt wurde, mit welcher Version und wann:
+
+```
+// === work4all-skill-log (v1) ===
+// DXJ0002 | v1.0.0 | 2026-08-28T15:10:00+02:00 | neuen-devexpress-listenreport-bauen
+// === end work4all-skill-log ===
+```
+
+Zeitstempel immer mit Zeitzone Europe/Berlin erzeugen (`TZ=Europe/Berlin date '+%Y-%m-%dT%H:%M:%S%z'` bzw. äquivalent in Python), nicht die UTC-Zeit der Session-Umgebung — das war schon beim Übertrag-Fix-Skill eine Fehlerquelle (siehe dort `known-issues.md` Eintrag 11).
 
 ## Referenzdateien im Überblick
 

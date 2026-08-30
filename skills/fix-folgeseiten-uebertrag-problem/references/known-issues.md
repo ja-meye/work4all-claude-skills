@@ -125,6 +125,16 @@ Nach Auslieferung meldete der Nutzer: das Wort "Übertrag €" erschien zwar kor
 
 ---
 
+## 12. Skill kennt bisher nur referenznahe Reports — stärker abweichende, ältere Varianten sind ein bekannter blinder Fleck
+
+**Was passiert ist:** Der Kunde hat explizit darauf hingewiesen (28.08.2026, ohne dass es an einem konkreten Report aufgefallen wäre): Alle bisherigen Fix-Läufe dieser Skill betrafen Reports, die strukturell nah an der bestätigten Referenzdatei liegen. Es gibt im Feld daneben deutlich ältere Reports mit wesentlich stärker abweichender Struktur, die noch nicht durch diese Skill gelaufen sind. Bei diesen wird ein Fix voraussichtlich tiefer eingreifen müssen — z. B. müssen eigene Berechnungsfelder mit eingearbeitet werden, die es in der Referenz so nicht gibt, oder Bandnamen/Mechanik weichen stärker ab, als der aktuelle Fix-Katalog vorsieht.
+
+**Was man daraus lernt:** Der Fix-Katalog und diese known-issues.md sind bisher ausschließlich aus Läufen an referenznahen Reports entstanden — sie sind kein Nachweis dafür, dass die Muster auch auf strukturell stark abweichende, ältere Reports zutreffen. Das ist kein Fehler, der schon aufgetreten ist, sondern eine bekannte, vom Kunden selbst benannte Lücke im bisherigen Abdeckungsgrad der Skill.
+
+**Wie man es künftig vermeidet:** Bei jeder neuen `.repx`, die in Schritt 1 (Rohdaten extrahieren) schon strukturell deutlich von den bekannten Bandnamen/Mustern abweicht (siehe SKILL.md „Bekannte Grenzen"): das dem Nutzer proaktiv melden, nicht versuchen, den bestehenden Fix-Katalog gewaltsam passend zu machen. Langsamer und vorsichtiger vorgehen als bei einem referenznahen Report, explizit mehr Rückfragen stellen statt „automatisch sicher" einzustufen, und nach Abschluss unbedingt einen neuen Eintrag hier sowie ggf. ein neues Muster im Fix-Katalog ergänzen — nur so wächst die Abdeckung schrittweise, wie vom Kunden angekündigt ("das wird nach und nach kommen").
+
+---
+
 ## (Platzhalter für künftige Einträge)
 
-Beim nächsten Report-Lauf, der etwas Neues zutage fördert, hier als Eintrag Nr. 12 ergänzen — gleiches Format: Was passiert ist / Was man daraus lernt / Wie man es künftig vermeidet.
+Beim nächsten Report-Lauf, der etwas Neues zutage fördert, hier als Eintrag Nr. 13 ergänzen — gleiches Format: Was passiert ist / Was man daraus lernt / Wie man es künftig vermeidet.
