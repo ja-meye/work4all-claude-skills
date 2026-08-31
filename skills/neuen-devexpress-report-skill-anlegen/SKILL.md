@@ -28,14 +28,6 @@ Beide Typen teilen sich dieselben Pflichtbausteine (siehe unten) — nur "Schrit
 
 Erst nach Bestätigung durch den Nutzer wird der Skill tatsächlich geschrieben. Diese Regel gilt für JEDEN neuen Skill, nicht nur für Skills, die mit diesem Meta-Skill selbst gebaut werden — sie ist ein permanenter Teil des Prozesses.
 
-## Standing Rule: Rückfrage statt Annahme, kritische Prüfung statt Automatismus
-
-Diese Regel gilt für **jeden** Report-Skill in diesem Plugin, bei **jedem** Schritt — nicht nur bei den unter Pflichtbaustein 3 beschriebenen Sicherheitsstufen für einzelne Feld-/Code-Änderungen, sondern auch für Prozessentscheidungen (z.B.: reicht die vorliegende Referenz wirklich aus? soll ein optionaler Schritt wie Skript-Hygiene laufen? ist eine Annahme über eine Datenbankstruktur wirklich abgesichert?):
-
-- **Bei Unsicherheit wird immer nachgefragt, nie geraten oder halluziniert.** Nur bei 100%iger Sicherheit — d.h. eindeutig durch eine vorliegende Referenzdatei, Spezifikation oder Nutzeraussage belegt — darf eine Anpassung an Logik, Daten oder Struktur eigenständig vorgenommen werden. "Klingt plausibel" oder "ist in ähnlichen Reports üblich" reicht dafür nicht.
-- **Kritisch prüfen, ob eine Anpassung überhaupt nötig ist, bevor sie vorgeschlagen wird.** Nicht jede technisch mögliche Änderung sollte gemacht werden, nur weil sie machbar ist — insbesondere bei Refactoring-artigen Vorschlägen (Skript-Hygiene, "sauberer" wirkende Alternativen) muss der tatsächliche Nutzen die Kosten (Regressionsrisiko, Review-Aufwand) rechtfertigen. Im Zweifel: nichts anfassen und stattdessen dem Nutzer die Beobachtung mitteilen.
-- Diese Regel ersetzt nicht die dreistufige Einordnung aus Pflichtbaustein 3, sondern steht darüber: Sie gilt auch dort, wo Pflichtbaustein 3 keine explizite Stufe vorsieht (z.B. bei der Frage, ob überhaupt weitergemacht werden soll).
-
 ## Pflichtbausteine jedes Report-Skills
 
 Jeder neue oder überarbeitete DevExpress-Report-Skill muss folgende Bausteine enthalten:
@@ -57,14 +49,14 @@ Details zu Skill-ID-Vergabe und Versionierung: siehe `references/skill-id-regist
 
 Ein nummerierter Ablauf, typtypisch:
 
-- **Verbesserungs-Typ**: Report entgegennehmen → Referenzdatei anfordern (Pflicht) → Befund melden vor Änderung → Fixes anwenden (nach Sicherheitsstufen, siehe unten) → Skript-Hygiene als separater Schritt → Validierung → Auslieferung mit Zeitstempel → Wissensdatenbank (`known-issues.md`) pflegen.
+- **Verbesserungs-Typ**: Report entgegennehmen → **Backup mit Zeitstempel anlegen (Pflicht, siehe Baustein 9, immer als erstes)** → Referenzdatei anfordern (Pflicht) → Befund melden vor Änderung → Fixes anwenden (nach Sicherheitsstufen, siehe unten) → Skript-Hygiene als separater Schritt → Validierung → Auslieferung mit Zeitstempel → Wissensdatenbank (`known-issues.md`) pflegen.
 - **Neuerstellungs-Typ**: Mockup + Datenstruktur + Referenz-`.repx` entgegennehmen → Excel-Feldzuordnung erstellen und abstimmen → Query/Joins übernehmen → neue `.repx` bauen → Validierung → Auslieferung mit Zeitstempel.
+
+Beide Typen: Wird an einem Punkt des Ablaufs das eingebettete C#-Skript oder das rohe XML einer bestehenden `.repx` direkt gelesen oder verändert, ist vorher Baustein 10 (`references/repx-format-basics.md`) zu lesen — unabhängig vom fachlichen Thema des Skills.
 
 ### 3. Schlüsse / Entscheidungspunkte (Sicherheitsstufen)
 
-Bevor eine Änderung überhaupt einer Stufe zugeordnet wird, steht die Frage aus der Standing Rule oben: **ist sie wirklich nötig?** Eine Änderung, die zwar korrekt und plausibel wäre, aber kein reales Problem löst oder keine gestellte Anforderung erfüllt, wird nicht vorgeschlagen — unabhängig davon, wie sicher sie technisch wäre.
-
-Jede Änderung an einer bestehenden Datei (Verbesserungs-Typ) oder jede Annahme beim Neubau (Neuerstellungs-Typ), die diese Prüfung besteht, wird einer von drei Sicherheitsstufen zugeordnet:
+Jede Änderung an einer bestehenden Datei (Verbesserungs-Typ) oder jede Annahme beim Neubau (Neuerstellungs-Typ) wird einer von drei Sicherheitsstufen zugeordnet:
 
 1. **Automatisch sicher** — wird ohne Rückfrage angewendet, wenn eine bestätigte Referenz/Spezifikation eindeutig vorliegt.
 2. **Vorschlag mit Rückfrage** — plausibel, aber nicht zweifelsfrei belegt; wird dem Nutzer zur Bestätigung vorgelegt, bevor es angewendet wird.
@@ -72,14 +64,13 @@ Jede Änderung an einer bestehenden Datei (Verbesserungs-Typ) oder jede Annahme 
 
 ### 4. Validierung
 
-Eine skill-eigene `references/validierung-*.md` oder `validation-checklist.md` mit mindestens:
+Verpflichtende Basis: **`references/validation-generic.md`** (dieser Meta-Skill) — die dort gelistete generische Checkliste (XML-Wohlgeformtheit, `Ref`-Eindeutigkeit + Auflösbarkeit aller `#Ref-x`-Verweise, Klammern-Balance, symmetrische Handler-Entfernung, BOM-Prüfung, Changelog-Format u. a.) gilt für **jede** `.repx`-Bearbeitung und wird nicht in jedem Fach-Skill neu geschrieben, sondern von dort referenziert.
 
-- XML-Wohlgeformtheit (`xml.etree.ElementTree.parse`)
-- `Ref`-Eindeutigkeit + Auflösbarkeit aller `#Ref-x`-Verweise
+Jeder Fach-Skill ergänzt diese Basis um eine eigene `references/validierung-*.md` oder `validation-checklist.md` mit den fachlich zusätzlichen Prüfpunkten, z. B.:
+
 - Base64-Datenquelle dekodiert und separat als XML geprüft
 - alle `[Feldname]`-Expressions gegen `ResultSchema` abgeglichen
-- BOM-Prüfung nach jedem Schreibschritt
-- expliziter Hinweis: DevExpress-Designer-Laden + Testdaten-Rendering wird dadurch NICHT ersetzt und muss zusätzlich manuell erfolgen
+- fachspezifische Invarianten (z. B. bestimmte `<Summary>`-Zählungen, die sich durch den Fix nicht ändern dürfen)
 
 ### 5. Output-Konvention
 
@@ -98,26 +89,36 @@ Vollständige Spezifikation: `references/fix-log-format.md`. Kurzfassung: jeder 
 
 Vollständiger Ablauf: `references/ablage-und-versionierung.md`. Kurzfassung: jeder neue oder geänderte Skill wird IMMER an zwei Orten ausgeliefert — als Cowork-Plugin-Paket (`SendUserFile`) und im lokalen GitHub-Repo `C:\GitHub\work4all-claude-skills\skills\...` (via Device-Bridge: stage → SendUserFile → `device_commit_files`, da für dieses Gerät kein `device_bash` verfügbar ist). Dazu liefert Claude immer eine fertige Commit-Message (Titel + Grund + Änderungen-Liste) im etablierten Stil des Nutzers.
 
-**Umgebungs-Hinweis:** Steht in der aktuellen Session keine Device-Bridge zur Verfügung (z.B. normale Claude.ai-Chat-Umgebung ohne `SendUserFile`/`device_commit_files`), kann dieser Baustein nicht automatisch ausgeführt werden. In dem Fall gilt Pflichtbaustein 10 ("Nicht ausgeführte Teile melden"): Claude liefert die geänderten Dateien als herunterladbare Datei(en) plus die fertige Commit-Message, weist aber explizit darauf hin, dass die eigentliche Ablage an beiden Orten manuell durch den Nutzer (oder in einer späteren Cowork-Session mit Device-Zugriff) erfolgen muss.
+### 9. Backup-Pflicht vor Änderung
 
-### 9. Ausführungsprotokoll auch ohne Änderung
+Jeder Skill, der eine **bestehende** `.repx`-Datei verändert (Verbesserungs-Typ; beim Neuerstellungs-Typ nur relevant, falls ausnahmsweise eine bestehende Datei direkt überschrieben statt als neue Datei ausgeliefert wird), legt **vor der ersten inhaltlichen Änderung** automatisch — ohne Rückfrage — eine Sicherungskopie mit Zeitstempel im gleichen Verzeichnis wie das Original an:
 
-Jeder Verbesserungs-Typ-Skill hinterlässt bei **jeder abgeschlossenen Anwendung** einen Log-Eintrag im `work4all-log`-Block — nicht nur, wenn tatsächlich etwas geändert wurde. Vollständige Spezifikation inkl. der drei zulässigen Ergebnis-Werte (`geändert`, `keine Änderung nötig`, `abgebrochen: <Kurzgrund>`) und der genauen Abgrenzung, wann ein nicht zu Ende geführter Lauf überhaupt eine Zeile bekommt: `references/fix-log-format.md`, Regel 7.
+```
+<Reportname>_backup_<JJJJMMTT-hhmm>.repx
+```
 
-Zweck: Ohne diesen Eintrag lässt sich aus der Datei allein nicht unterscheiden, ob ein Skill auf sie angewendet wurde und nichts fand, oder ob er nie angewendet wurde. Beides sieht ohne Protokoll identisch aus — genau das soll dieser Baustein verhindern.
+Diese Sicherung ist keine der drei Sicherheitsstufen aus Baustein 3 (sie ist keine fachliche Änderungsentscheidung), sondern eine reine, immer ausgeführte Vorsichtsmaßnahme — sie passiert als aller erster Schritt, noch vor Diagnose/Extraktion, damit auch der unveränderte Ausgangszustand nachvollziehbar bleibt, falls schon während der Diagnose versehentlich etwas verändert wird.
 
-### 10. Nicht ausgeführte Teile melden
+Hintergrund: Diese Regel gilt bereits projektweit als Arbeitsweise-Vorgabe, war aber bisher nicht als Skill-Pflichtbaustein verankert. Ohne diese Verankerung gilt sie nicht mehr automatisch, sobald ein Skill außerhalb dieses Projekt-Kontexts verwendet wird (anderes Projekt, andere Session) — deshalb ab v0.2.0 fester Bestandteil des Bauplans.
 
-Jeder Skill-Lauf schließt mit einem kurzen, expliziten Status ab, welche im Skill vorgesehenen Teile **nicht** ausgeführt wurden — unabhängig davon, ob der Grund harmlos ist (z.B. optionale Skript-Hygiene nicht angefragt) oder eine echte Lücke (z.B. Referenzdatei fehlte, ein Validierungsschritt konnte technisch nicht laufen, die Device-Bridge war nicht verfügbar). Für jeden übersprungenen Teil: **was** wurde übersprungen, **warum**, und was das für das weitere Vorgehen bedeutet — damit der Nutzer gezielt entscheiden kann, wie es weitergeht, statt eine Lücke erst später zufällig zu bemerken. Ein Lauf ohne jede Auslassung darf das kurz und positiv vermerken ("alle Schritte vollständig durchlaufen"); es muss keine leere Liste erzwungen werden.
+### 10. Gemeinsame .repx-Technik-Basis
+
+Jeder Skill, der das eingebettete C#-Skript oder das rohe XML einer `.repx` direkt liest oder verändert — unabhängig vom fachlichen Thema —, **muss** vor der ersten Bearbeitung **`references/repx-format-basics.md`** (dieser Meta-Skill) lesen. Diese Datei enthält die format-technische Grundmechanik, die für alle diese Skills identisch gilt: Encoding/BOM/CRLF, die Escaping-/Splice-Pipeline, das DevExpress-Bandmodell, `BeforePrint` vs. `PrintOnPage`, die XML/Skript-Paritätsregel, den `<Localization>`-Block und die `<Summary>`-Falle.
+
+Ein neuer Fach-Skill schreibt diese Mechanik **nicht erneut** in eine eigene Referenzdatei, sondern referenziert `repx-format-basics.md` und ergänzt in seiner eigenen Referenz nur das, was tatsächlich fachlich neu/spezifisch ist (z. B. die konkrete Übertrag-/Folgeseiten-Anwendung dieser Mechanik). Ziel: dieselbe Falle wird nicht in jedem neuen Skill unabhängig neu entdeckt, übersehen oder anders (und ggf. falsch) beschrieben.
+
+Bestehende Skills, deren eigene Referenz diese Mechanik bereits vollständig enthält (z. B. `fix-folgeseiten-uebertrag-problem/references/repx-technical-notes.md`), werden dadurch nicht automatisch geändert — der Verweis auf die zentrale Basis gilt ab v0.2.0 für neu angelegte oder inhaltlich überarbeitete Skills.
 
 ## Versionierung dieses Meta-Skills
 
 - v0.1.0 — Erstfassung: Bauplan mit den 8 Pflichtbausteinen, Übersicht-zuerst-Regel, Skill-ID-Format `DX<Kürzel><4-stellig>`.
-- v0.2.0 — Standing Rule "Rückfrage statt Annahme, kritische Prüfung statt Automatismus" ergänzt (gilt übergreifend, nicht nur für Feld-/Code-Entscheidungen). Pflichtbaustein 3 verweist jetzt explizit auf die Notwendigkeitsprüfung vor der Stufen-Einordnung. Zwei neue Pflichtbausteine ergänzt: 9 "Ausführungsprotokoll auch ohne Änderung" (verweist auf `fix-log-format.md` v2 mit `<Ergebnis>`-Feld) und 10 "Nicht ausgeführte Teile melden". Pflichtbaustein 8 um einen Umgebungs-Hinweis ergänzt (Device-Bridge nicht überall verfügbar).
-- v0.2.1 — Dokumentationskorrektur: Log-Block in `work4all-log` umbenannt (vorher `work4all-skill-log`), Versionskennzeichnung `(v2)` bleibt erhalten. Referenz auf die korrigierte Zeitstempel-Vorgabe (kein UTC-Offset) in `fix-log-format.md` ergänzt.
+- v0.2.0 — Zwei fehlende, wiederkehrend benötigte Bausteine ergänzt, damit künftige Korrektur-Skills keine bereits gelösten Probleme erneut lösen oder Regeln vergessen: Baustein 9 (Backup-Pflicht vor jeder Änderung, bisher nur Projekt-Instruction, jetzt Skill-Pflichtbaustein) und Baustein 10 (gemeinsame, themenneutrale `.repx`-Technik-Basis in `references/repx-format-basics.md`, damit Encoding-/Escaping-/Bandmodell-Wissen nicht pro Skill dupliziert wird). Baustein 4 (Validierung) verweist jetzt auf eine neue generische Basis-Checkliste (`references/validation-generic.md`), die jeder Fach-Skill um eigene Punkte ergänzt statt sie neu zu schreiben.
+- v0.2.1 — Fehlerkorrektur in `repx-format-basics.md`, Bearbeitungs-Pipeline Schritt 4.3: Zeilenenden werden jetzt explizit auf reines `\n` normalisiert, BEVOR `\n` → `&#xD;&#xA;` kodiert wird — sonst blieb bei jedem Zeilenumbruch im gesamten Skript ein rohes `\r` stehen (sichtbar als Leerzeile nach jeder Zeile, siehe `fix-folgeseiten-uebertrag-problem/references/known-issues.md` Eintrag 13). Neuer Pflicht-Validierungspunkt 12 in `references/validation-generic.md` ergänzt. Stale Verweise auf `work4all-skill-log` auf den aktuellen Blocknamen `work4all-log` korrigiert.
 
 ## Referenzdateien im Überblick
 
 - `references/skill-id-registry.md` — Tabelle aller vergebenen Skill-IDs (Name, Autor, Datum, Version).
 - `references/fix-log-format.md` — vollständige Spezifikation des `work4all-log`-Blocks, Schutzregel, Idempotenz-Check.
 - `references/ablage-und-versionierung.md` — Ablauf für die doppelte Auslieferung (Cowork-Plugin + lokales GitHub-Repo), Versionsbump-Regeln, Commit-Message-Vorlage.
+- `references/repx-format-basics.md` — themenneutrale `.repx`-Technik-Basis (Encoding, Escaping/Splice-Pipeline, Bandmodell, `Localization`-Block, bekannte generische Fallen). Pflichtlektüre vor jeder direkten Skript-/XML-Bearbeitung (Baustein 10).
+- `references/validation-generic.md` — generische Validierungs-Mindestcheckliste für jede `.repx`-Bearbeitung (Baustein 4).

@@ -9,14 +9,15 @@ Eine `.repx`-Datei ist XML, UTF-8 mit BOM (Byte Order Mark), mit CRLF (`\r\n`) a
 ## Sichere Bearbeitungs-Pipeline (Python)
 
 1. Datei öffnen mit `encoding='utf-8-sig', newline=''` — das entfernt die BOM beim Lesen, lässt aber die CRLF-Sequenzen exakt im String stehen (kein automatisches Newline-Mapping). Das ist wichtig: mit Standard-Textmodus wird `\r\n` beim Lesen still zu `\n` normalisiert, wodurch jedes literale `\r\n`-Suchmuster stillschweigend nicht mehr matcht — ein Fehler, der leicht unbemerkt bleibt, weil kein Python-Fehler geworfen wird, nur 0 Treffer.
-2. Den `ScriptsSource="..."`-Wert per Stringsuche extrahieren (siehe Abschnitt "Grenzmarkierungen" unten) und mit `html.unescape(...)` dekodieren, um lesbaren C#-Code zu bekommen.
-3. Den Code normal mit einem Text-/Editier-Tool bearbeiten.
+2. Den `ScriptsSource="..."`-Wert per Stringsuche extrahieren (siehe Abschnitt "Grenzmarkierungen" unten) und mit `html.unescape(...)` dekodieren, um lesbaren C#-Code zu bekommen. **Wichtig:** Danach enthält der String an jedem Zeilenumbruch ein echtes `\r\n` (CR+LF), keine reinen `\n` — das ist für Schritt 4 entscheidend, siehe dort.
+3. Den Code normal mit einem Text-/Editier-Tool bearbeiten. Eigene neu eingefügte Zeilen können mit reinem `\n` geschrieben werden — die Normalisierung in Schritt 4.3 vereinheitlicht ohnehin alles.
 4. Beim Zurückschreiben in exakt dieser Reihenfolge escapen (Reihenfolge ist entscheidend, sonst entstehen doppelt/falsch escapte Zeichen):
    1. `&` → `&amp;` (muss zuerst passieren, sonst werden die `&` aus Schritt 2–4 selbst nochmal escaped)
    2. `<`, `>`, `"` escapen
-   3. `\n` → `&#xD;&#xA;` (als Letztes)
+   3. **Zeilenenden normalisieren, bevor kodiert wird:** zuerst `\r\n` → `\n` und verbleibende einzelne `\r` → `\n` vereinheitlichen, danach erst `\n` → `&#xD;&#xA;`. **Bekannter Fehler, wenn dieser Normalisierungsschritt fehlt:** Wird stattdessen direkt `\n` → `&#xD;&#xA;` auf dem Ergebnis von Schritt 2 angewendet (das noch echte `\r\n`-Paare enthält), bleibt das `\r` jeder Zeile als rohes, nicht escapetes Zeichen unmittelbar VOR dem neuen `&#xD;&#xA;` stehen. Das erzeugt bei JEDEM Zeilenumbruch im gesamten Skript (nicht nur an bearbeiteten Stellen) eine zusätzliche Leerzeile, sichtbar sobald jemand das Skript im DevExpress-Designer oder einem Code-Editor öffnet. Der Fehler ist im rohen XML-Diff leicht zu übersehen, weil die Datei trotzdem wohlgeformtes XML bleibt und lädt — sichtbar wird er erst beim Betrachten des dekodierten Skripts. Siehe `known-issues.md` für den konkreten Vorfall.
 5. Den re-escapten String zwischen den exakten Original-Grenzen zurücksplicen.
 6. Datei schreiben mit `encoding='utf-8', newline=''` und die BOM (`'﻿'`) manuell vor den Inhalt setzen.
+7. **Validierung (neu, PFLICHT):** Im rohen, noch escapten `ScriptsSource`-Attributwert der geschriebenen Datei prüfen, dass keine literalen `\r`- oder `\n`-Zeichen mehr vorkommen (`raw_value.count('\r') == 0 and raw_value.count('\n') == 0`) — nur noch `&#xD;&#xA;`-Entities. Ein Treffer > 0 bedeutet: Schritt 4.3 wurde nicht (oder falsch) angewendet.
 
 ### Grenzmarkierungen für den Splice
 

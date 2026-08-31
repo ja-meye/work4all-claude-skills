@@ -135,6 +135,16 @@ Nach Auslieferung meldete der Nutzer: das Wort "Übertrag €" erschien zwar kor
 
 ---
 
+## 13. Fehlende `\r`-Normalisierung vor dem finalen Escaping erzeugt eine Leerzeile nach JEDER Skriptzeile
+
+**Was passiert ist:** Beim Zurückschreiben eines bearbeiteten Skripts wurde die Escaping-Pipeline aus `repx-technical-notes.md` Schritt 4 angewendet, aber Schritt 4.3 wurde direkt als `script.replace('\n', '&#xD;&#xA;')` auf dem Ergebnis von Schritt 2 (`html.unescape(...)`) ausgeführt. Nach `html.unescape` enthält der Skript-String an jedem ursprünglichen Zeilenumbruch aber ein echtes `\r\n`-Paar (CR+LF), keine reinen `\n`. Die direkte Ersetzung traf also nur das `\n` jedes Paares und ließ das zugehörige `\r` als rohes, nicht escapetes Zeichen unmittelbar vor dem neu erzeugten `&#xD;&#xA;` stehen. Ausgeliefert wurden zwei `.repx`-Dateien (Ziel- und Referenzdatei), bei denen dadurch **jede einzelne Zeile des gesamten Skripts** (nicht nur die bearbeiteten Stellen) beim Öffnen im Editor/Designer von einer Leerzeile gefolgt war — weil beim Zurückschreiben immer der komplette Skript-Attributwert neu escaped wird, nicht nur der geänderte Teil. Der Kunde hat das per Screenshot des dekodierten Skripts gemeldet.
+
+**Was man daraus lernt:** Die Datei blieb trotz des Fehlers wohlgeformtes XML und lud anstandslos — ein reiner XML-Well-formedness-Check (Validierungspunkt 1) fängt diesen Fehler nicht ab, weil ein rohes `\r` in einem Attributwert syntaktisch gültig ist. Der Fehler zeigt sich ausschließlich beim Betrachten des dekodierten Skripts (Designer oder Code-Editor), nicht im rohen XML-Diff gegen die Vorversion, wenn dieser nur auf Wohlgeformtheit und Strukturgleichheit prüft. Das macht ihn besonders tückisch: Alle bisherigen Validierungspunkte (Ref-Duplikate, Scripts-Parität, Klammernbalance, Summary-Anzahl, BOM) wären hier grün gewesen.
+
+**Wie man es künftig vermeidet:** Zeilenenden direkt nach dem Unescapen (Schritt 2) oder spätestens unmittelbar vor der finalen Kodierung (Schritt 4.3) einmalig auf reines `\n` normalisieren (`text.replace('\r\n', '\n').replace('\r', '\n')`), sodass zum Zeitpunkt von `\n` → `&#xD;&#xA;` garantiert keine rohen `\r`-Zeichen mehr im String vorkommen. Siehe `repx-technical-notes.md` Schritt 4.3 (aktualisiert) für die korrigierte Pipeline. Zusätzlich als eigenständigen Validierungs-Check ergänzt (siehe `validation-checklist.md` Punkt 12): nach dem Schreiben den rohen, noch escapten `ScriptsSource`-Wert auf verbliebene literale `\r`/`\n`-Zeichen prüfen — muss 0 sein, sonst wurde die Normalisierung nicht oder falsch angewendet. Dieser Check hätte den Fehler vor der Auslieferung gefangen.
+
+---
+
 ## (Platzhalter für künftige Einträge)
 
-Beim nächsten Report-Lauf, der etwas Neues zutage fördert, hier als Eintrag Nr. 13 ergänzen — gleiches Format: Was passiert ist / Was man daraus lernt / Wie man es künftig vermeidet.
+Beim nächsten Report-Lauf, der etwas Neues zutage fördert, hier als Eintrag Nr. 14 ergänzen — gleiches Format: Was passiert ist / Was man daraus lernt / Wie man es künftig vermeidet.
