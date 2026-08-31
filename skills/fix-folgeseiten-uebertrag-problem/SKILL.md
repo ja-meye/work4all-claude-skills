@@ -2,7 +2,7 @@
 name: fix-folgeseiten-uebertrag-problem
 description: Diagnostiziert und repariert die Übertrag-/Folgeseiten-Unterdrückungslogik in DevExpress-XtraReports-.repx-Dateien vom work4all-Aio-Report-Typ (und strukturell ähnlichen Varianten). Unbedingt verwenden, wenn eine .repx-Datei hochgeladen wird und der Nutzer über eine fehlende oder falsche "Übertrag"-Zeile, verschwindende Tabellenüberschriften auf Folgeseiten, falsche sumCarryoverSum-Werte, Seitenumbruch-Probleme bei Positionstabellen, oder allgemein über "Report-Bugs"/"Fehler beim Druck von Angeboten/Rechnungen" bei work4all-Reports spricht — auch wenn nicht explizit "Übertrag" oder "Folgeseite" genannt wird, aber Symptome wie "Betrag stimmt nicht", "Kopfzeile fehlt auf Seite 2", "Summe zu früh/zu spät" beschrieben werden. Auch nutzen, wenn der Nutzer nach einer allgemeinen Aufräumung/Bereinigung ("Skript-Hygiene") des eingebetteten C#-Skripts in einer .repx-Datei fragt (tote Kommentare, leere Event-Handler).
 skill_id: DXJ0001
-version: 1.1.0
+version: 1.1.1
 ---
 
 # DevExpress .repx — Übertrag/Folgeseiten-Fix & Skript-Hygiene
@@ -36,9 +36,9 @@ Bevor irgendein inhaltlicher Fix (alles außer reiner Skript-Hygiene, Muster (e)
 
 ## Skill-ID, Version & Fix-Log
 
-Diese Skill trägt die ID **DXJ0001** (aktuell Version **1.1.0**). Format und vollständige Spezifikation des `work4all-skill-log`-Blocks (inkl. `<Ergebnis>`-Feld, Idempotenz-Check, Rückwärtskompatibilität zu einem älteren `(v1)`-Block) sind zentral dokumentiert in `work4all-reporting-skills:neuen-devexpress-report-skill-anlegen`, `references/fix-log-format.md` — dort auch die vollständige Registry aller vergebenen IDs (`references/skill-id-registry.md`). Wann und wie diese Skill den Block liest und beschreibt: siehe Schritt 7 „Log-Eintrag schreiben" im Arbeitsablauf unten.
+Diese Skill trägt die ID **DXJ0001** (aktuell Version **1.1.1**). Format und vollständige Spezifikation des `work4all-log`-Blocks (inkl. `<Ergebnis>`-Feld, Idempotenz-Check, Rückwärtskompatibilität zu einem älteren `(v1)`-Block) sind zentral dokumentiert in `work4all-reporting-skills:neuen-devexpress-report-skill-anlegen`, `references/fix-log-format.md` — dort auch die vollständige Registry aller vergebenen IDs (`references/skill-id-registry.md`). Wann und wie diese Skill den Block liest und beschreibt: siehe Schritt 7 „Log-Eintrag schreiben" im Arbeitsablauf unten.
 
-**Wichtig für Schritt 5 (Skript-Hygiene):** Der `work4all-skill-log`-Block sieht wie ein Kommentarblock aus, ist aber KEIN toter Kommentar — er darf von der Hygiene-Routine niemals entfernt werden, auch nicht als vermeintlich "wirkungsloser" Kommentar. Vor jeder Hygiene-Passage explizit prüfen, dass der Block (erkennbar an der festen Marker-Zeile `=== work4all-skill-log`) unangetastet bleibt.
+**Wichtig für Schritt 5 (Skript-Hygiene):** Der `work4all-log`-Block sieht wie ein Kommentarblock aus, ist aber KEIN toter Kommentar — er darf von der Hygiene-Routine niemals entfernt werden, auch nicht als vermeintlich "wirkungsloser" Kommentar. Vor jeder Hygiene-Passage explizit prüfen, dass der Block (erkennbar an der festen Marker-Zeile `=== work4all-log`) unangetastet bleibt.
 
 ## Bekannte Grenzen
 
@@ -54,7 +54,7 @@ Der ursprüngliche Auftrag für diese Skill entstand aus einer echten Regression
 
 Kopiere die hochgeladene `.repx` in ein Arbeitsverzeichnis (z.B. `/tmp/repx_work/`). Öffne sie mit `encoding='utf-8-sig', newline=''`, damit BOM sauber abgetrennt wird, aber die CRLF-Zeilenenden exakt erhalten bleiben (Details dazu und zur `ScriptsSource`-Extraktion in `references/repx-technical-notes.md`). Dekodiere das eingebettete C#-Skript und speichere es separat als lesbare `.cs`-Datei, damit du es normal durchsuchen und lesen kannst.
 
-Prüfe direkt zu Beginn, ob es sich überhaupt um einen strukturell verwandten Report handelt (Bandnamen wie `Sub_POS`, `GROUP_ERP_Nummer`, `GroupFooter_Uebertrag`, Verwendung von `sumCarryoverSum`). Falls die Struktur stark abweicht oder sich die Datei nicht sauber öffnen/parsen lässt, sag das dem Nutzer offen und brich hier ab — die Muster unten generalisieren nur begrenzt auf komplett andere Reports. Ein Abbruch an dieser Stelle (vor Schritt 2) bekommt **keinen** Eintrag im `work4all-skill-log` — es wurde noch nichts inhaltlich geprüft (siehe `references/fix-log-format.md`, Regel 7). Melde den Abbruch stattdessen klar im Chat, inkl. Grund, damit gemeinsam das weitere Vorgehen abgestimmt werden kann.
+Prüfe direkt zu Beginn, ob es sich überhaupt um einen strukturell verwandten Report handelt (Bandnamen wie `Sub_POS`, `GROUP_ERP_Nummer`, `GroupFooter_Uebertrag`, Verwendung von `sumCarryoverSum`). Falls die Struktur stark abweicht oder sich die Datei nicht sauber öffnen/parsen lässt, sag das dem Nutzer offen und brich hier ab — die Muster unten generalisieren nur begrenzt auf komplett andere Reports. Ein Abbruch an dieser Stelle (vor Schritt 2) bekommt **keinen** Eintrag im `work4all-log` — es wurde noch nichts inhaltlich geprüft (siehe `references/fix-log-format.md`, Regel 7). Melde den Abbruch stattdessen klar im Chat, inkl. Grund, damit gemeinsam das weitere Vorgehen abgestimmt werden kann.
 
 ### Schritt 2 — Referenz-.repx anfordern (PFLICHT) und Diagnose gegen den Fix-Katalog
 
@@ -92,7 +92,7 @@ Konnte ein einzelner Validierungs-Check aus irgendeinem Grund nicht durchgeführ
 
 ### Schritt 7 — Log-Eintrag schreiben
 
-Schreibe **unabhängig vom Ergebnis** eine Zeile in den `work4all-skill-log`-Block im eingebetteten Skript, sobald Schritt 2 (Diagnose) tatsächlich abgeschlossen wurde — Format und Ergebnis-Werte: `references/fix-log-format.md`.
+Schreibe **unabhängig vom Ergebnis** eine Zeile in den `work4all-log`-Block im eingebetteten Skript, sobald Schritt 2 (Diagnose) tatsächlich abgeschlossen wurde — Format und Ergebnis-Werte: `references/fix-log-format.md`.
 
 - Vor dem Schreiben: Idempotenz-Check aus `fix-log-format.md` Regel 2 durchführen (nur relevant, wenn im Block bereits eine `geändert`-Zeile dieser Skill-ID mit ≥ aktueller Version steht).
 - Wurden in Schritt 4 Fixes tatsächlich angewendet: Ergebnis `geändert`.
@@ -120,9 +120,10 @@ Wenn in diesem Lauf ein neues Muster, eine neue Falle oder eine überraschende D
 - `references/fix-catalog.md` — die bekannten Problem-Muster, ihre Ursache, der empfohlene Fix, und wie sicher es ist, ihn automatisch anzuwenden.
 - `references/validation-checklist.md` — die Checks, die vor jeder Auslieferung durchlaufen werden müssen.
 - `references/known-issues.md` — lebendes Dokument bekannter Fallen und Überraschungen, wächst mit jedem Lauf.
-- `references/fix-log-format.md` (in `neuen-devexpress-report-skill-anlegen`) — Spezifikation des `work4all-skill-log`-Blocks inkl. Ergebnis-Werten (`geändert` / `keine Änderung nötig` / `abgebrochen: ...`) und der vollständigen Skill-ID-Registry, maßgeblich für Schritt 7.
+- `references/fix-log-format.md` (in `neuen-devexpress-report-skill-anlegen`) — Spezifikation des `work4all-log`-Blocks inkl. Ergebnis-Werten (`geändert` / `keine Änderung nötig` / `abgebrochen: ...`) und der vollständigen Skill-ID-Registry, maßgeblich für Schritt 7.
 
 ## Versionierung dieses Skills
 
 - v1.0.0 — Erstfassung plus nachträgliche Erweiterungen vor Einführung dieser Versionshistorie (Registry-Eintrag `DXJ0001`, 2026-08-28): Diagnose-/Fix-Methodik mit drei Sicherheitsstufen (Muster a-f), optionale Skript-Hygiene, Validierungs-Checkliste, `known-issues.md` als lebendes Dokument; danach ergänzt um Muster (g) „Mindesthöhen statt KeepTogether", die verpflichtende Referenz-.repx-Anforderung vor jedem inhaltlichen Fix, und die Sektion „Bekannte Grenzen".
 - v1.1.0 — Neuer Schritt 7 „Log-Eintrag schreiben" ergänzt: schreibt jetzt bei jedem abgeschlossenen Lauf einen Eintrag im `work4all-skill-log`-Block, auch ohne Änderung (`keine Änderung nötig`), gemäß `fix-log-format.md` v2. Schritt 8 „Auslieferung" um einen verpflichtenden Statusbericht zu nicht ausgeführten Teilen ergänzt. Schritt 1 und 2 um explizite Abbruch- bzw. Notwendigkeits-Klarstellung ergänzt. Abschnitt „Skill-ID, Version & Fix-Log" auf das neue `(v2)`-Log-Format samt `<Ergebnis>`-Feld aktualisiert und auf Schritt 7 verweisend gekürzt (statt Detail-Duplikat).
+- v1.1.1 — Dokumentationskorrektur: Log-Block in `work4all-log` umbenannt (vorher `work4all-skill-log`), Versionskennzeichnung `(v2)` in der Kopfzeile bleibt erhalten. Zeitstempel-Vorgabe in `fix-log-format.md` korrigiert: kein UTC-Offset (`+02:00`) mehr im Zeitstempel-Feld — nur noch die lokale Wanduhrzeit Europe/Berlin ohne Offset-Suffix. Alle Verweise auf den Blocknamen in dieser Datei entsprechend angepasst.

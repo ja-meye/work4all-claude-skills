@@ -2,7 +2,7 @@
 name: neuen-devexpress-report-skill-anlegen
 description: Legt einen neuen work4all-DevExpress-Report-Skill (Verbesserungs-Typ wie "fix-folgeseiten-uebertrag-problem" oder Neuerstellungs-Typ wie "neuen-devexpress-listenreport-bauen") strukturiert an und liefert ihn sowohl an das Cowork-Plugin als auch an das lokale GitHub-Repo C:\GitHub\work4all-claude-skills aus. Unbedingt verwenden, wenn der Nutzer einen neuen DevExpress-Skill anlegen, erweitern oder strukturieren möchte — auch bei kurzen Trigger-Sätzen wie "create new dx skill", "neuen DX Skill erstellen", "neuen Skill anlegen", "DX Skill Bauplan", "mach daraus einen skill" (im DevExpress/Report-Kontext), oder wenn der Nutzer nach Skill-ID, Versionierung, Fix-Log oder einer einheitlichen Struktur für Report-Skills fragt.
 skill_id: DXJ0003
-version: 0.2.0
+version: 0.2.1
 ---
 
 # Neuen DevExpress-Report-Skill anlegen
@@ -102,7 +102,7 @@ Vollständiger Ablauf: `references/ablage-und-versionierung.md`. Kurzfassung: je
 
 ### 9. Ausführungsprotokoll auch ohne Änderung
 
-Jeder Verbesserungs-Typ-Skill hinterlässt bei **jeder abgeschlossenen Anwendung** einen Log-Eintrag im `work4all-skill-log`-Block — nicht nur, wenn tatsächlich etwas geändert wurde. Vollständige Spezifikation inkl. der drei zulässigen Ergebnis-Werte (`geändert`, `keine Änderung nötig`, `abgebrochen: <Kurzgrund>`) und der genauen Abgrenzung, wann ein nicht zu Ende geführter Lauf überhaupt eine Zeile bekommt: `references/fix-log-format.md`, Regel 7.
+Jeder Verbesserungs-Typ-Skill hinterlässt bei **jeder abgeschlossenen Anwendung** einen Log-Eintrag im `work4all-log`-Block — nicht nur, wenn tatsächlich etwas geändert wurde. Vollständige Spezifikation inkl. der drei zulässigen Ergebnis-Werte (`geändert`, `keine Änderung nötig`, `abgebrochen: <Kurzgrund>`) und der genauen Abgrenzung, wann ein nicht zu Ende geführter Lauf überhaupt eine Zeile bekommt: `references/fix-log-format.md`, Regel 7.
 
 Zweck: Ohne diesen Eintrag lässt sich aus der Datei allein nicht unterscheiden, ob ein Skill auf sie angewendet wurde und nichts fand, oder ob er nie angewendet wurde. Beides sieht ohne Protokoll identisch aus — genau das soll dieser Baustein verhindern.
 
@@ -114,9 +114,10 @@ Jeder Skill-Lauf schließt mit einem kurzen, expliziten Status ab, welche im Ski
 
 - v0.1.0 — Erstfassung: Bauplan mit den 8 Pflichtbausteinen, Übersicht-zuerst-Regel, Skill-ID-Format `DX<Kürzel><4-stellig>`.
 - v0.2.0 — Standing Rule "Rückfrage statt Annahme, kritische Prüfung statt Automatismus" ergänzt (gilt übergreifend, nicht nur für Feld-/Code-Entscheidungen). Pflichtbaustein 3 verweist jetzt explizit auf die Notwendigkeitsprüfung vor der Stufen-Einordnung. Zwei neue Pflichtbausteine ergänzt: 9 "Ausführungsprotokoll auch ohne Änderung" (verweist auf `fix-log-format.md` v2 mit `<Ergebnis>`-Feld) und 10 "Nicht ausgeführte Teile melden". Pflichtbaustein 8 um einen Umgebungs-Hinweis ergänzt (Device-Bridge nicht überall verfügbar).
+- v0.2.1 — Dokumentationskorrektur: Log-Block in `work4all-log` umbenannt (vorher `work4all-skill-log`), Versionskennzeichnung `(v2)` bleibt erhalten. Referenz auf die korrigierte Zeitstempel-Vorgabe (kein UTC-Offset) in `fix-log-format.md` ergänzt.
 
 ## Referenzdateien im Überblick
 
 - `references/skill-id-registry.md` — Tabelle aller vergebenen Skill-IDs (Name, Autor, Datum, Version).
-- `references/fix-log-format.md` — vollständige Spezifikation des `work4all-skill-log`-Blocks, Schutzregel, Idempotenz-Check.
+- `references/fix-log-format.md` — vollständige Spezifikation des `work4all-log`-Blocks, Schutzregel, Idempotenz-Check.
 - `references/ablage-und-versionierung.md` — Ablauf für die doppelte Auslieferung (Cowork-Plugin + lokales GitHub-Repo), Versionsbump-Regeln, Commit-Message-Vorlage.
