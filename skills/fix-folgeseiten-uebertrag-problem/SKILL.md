@@ -2,7 +2,7 @@
 name: fix-folgeseiten-uebertrag-problem
 description: Diagnostiziert und repariert die Übertrag-/Folgeseiten-Unterdrückungslogik in DevExpress-XtraReports-.repx-Dateien vom work4all-Aio-Report-Typ (und strukturell ähnlichen Varianten). Unbedingt verwenden, wenn eine .repx-Datei hochgeladen wird und der Nutzer über eine fehlende oder falsche "Übertrag"-Zeile, verschwindende Tabellenüberschriften auf Folgeseiten, falsche sumCarryoverSum-Werte, Seitenumbruch-Probleme bei Positionstabellen, oder allgemein über "Report-Bugs"/"Fehler beim Druck von Angeboten/Rechnungen" bei work4all-Reports spricht — auch wenn nicht explizit "Übertrag" oder "Folgeseite" genannt wird, aber Symptome wie "Betrag stimmt nicht", "Kopfzeile fehlt auf Seite 2", "Summe zu früh/zu spät" beschrieben werden. Auch nutzen, wenn der Nutzer nach einer allgemeinen Aufräumung/Bereinigung ("Skript-Hygiene") des eingebetteten C#-Skripts in einer .repx-Datei fragt (tote Kommentare, leere Event-Handler).
 skill_id: DXJ0001
-version: 1.0.0
+version: 1.1.0
 ---
 
 # DevExpress .repx — Übertrag/Folgeseiten-Fix & Skript-Hygiene
@@ -30,25 +30,13 @@ Kurzfassung der Fixes, die aus dem ersten vollständig durchgefixten Report (`dx
 
 Bevor irgendein inhaltlicher Fix (alles außer reiner Skript-Hygiene, Muster (e)) an einer neuen Report-Variante vorgenommen wird, MUSS der Nutzer explizit nach dieser bestätigten Referenz-`.repx` gefragt werden. Das ist **kein optionaler Diagnoseschritt mehr, sondern Pflicht** — unabhängig davon, ob die neue Variante auf den ersten Blick strukturell abweichend aussieht. Grund: ein direkter struktureller Diff (Bandnamen, Scripts-Verdrahtung, Sichtbarkeits-Bedingungen, `Summary`-Elemente, `KeepTogether`-Werte, betroffene Variablen/Felder) gegen eine bestätigt korrekte Referenz ist zuverlässiger als eine Re-Implementierung rein aus der Katalog-Beschreibung — `fix-catalog.md` und `known-issues.md` sind Prosa-Zusammenfassungen und verlieren zwangsläufig Details wie exakte Variablennamen, exakte Bedingungsformulierungen und genaue Code-Platzierung. Frag aktiv danach, auch wenn der Nutzer die Referenz nicht von sich aus erwähnt.
 
-**Ausnahme:** Nur wenn der Nutzer explizit angibt, keine Referenzdatei zu haben oder sie nicht bereitstellen zu können/wollen, darf ohne Referenz weitergearbeitet werden — anhand der dokumentierten Muster in `references/fix-catalog.md`, `references/known-issues.md` und `references/repx-technical-notes.md`. In diesem Fall im Bericht an den Nutzer UND im finalen Changelog (Schritt 7) ausdrücklich vermerken, dass ohne Referenzvergleich gearbeitet wurde und das Ergebnis dadurch ein geringeres Vertrauensniveau hat als ein referenzverifizierter Fix.
+**Ausnahme:** Nur wenn der Nutzer explizit angibt, keine Referenzdatei zu haben oder sie nicht bereitstellen zu können/wollen, darf ohne Referenz weitergearbeitet werden — anhand der dokumentierten Muster in `references/fix-catalog.md`, `references/known-issues.md` und `references/repx-technical-notes.md`. In diesem Fall im Bericht an den Nutzer UND im finalen Changelog (Schritt 8) ausdrücklich vermerken, dass ohne Referenzvergleich gearbeitet wurde und das Ergebnis dadurch ein geringeres Vertrauensniveau hat als ein referenzverifizierter Fix.
 
 **Liegt eine Referenzdatei vor:** Extrahiere sie genauso wie die zu reparierende Datei (siehe Schritt 1) und führe einen strukturellen Diff durch (Bandnamen, Scripts-Verdrahtung, Sichtbarkeits-Bedingungen, `Summary`-Elemente, `KeepTogether`-Werte, betroffene Variablen/Felder). Wo die neue Variante strukturell dem Referenz-Report entspricht oder sehr ähnlich ist, die dort bestätigt funktionierenden Werte/Formulierungen bevorzugt 1:1 übernehmen (angepasst an ggf. abweichende Namen), statt sie unabhängig neu zu erfinden.
 
 ## Skill-ID, Version & Fix-Log
 
-Diese Skill trägt die ID **DXJ0001** (aktuell Version **1.0.0**). Format und Zweck dieser ID sind zentral dokumentiert in `work4all-reporting-skills:neuen-devexpress-report-skill-anlegen`, `references/fix-log-format.md` — dort auch die vollständige Registry aller vergebenen IDs. Kurzfassung für den täglichen Gebrauch:
-
-Jede reparierte `.repx` trägt ganz oben im eingebetteten Hauptskript einen Log-Block, der protokolliert, welche Skills mit welcher Version bereits darauf angewendet wurden:
-
-```
-// === work4all-skill-log (v1) ===
-// DXJ0001 | v1.0.0 | 2026-08-28T14:32:00+02:00 | fix-folgeseiten-uebertrag-problem
-// === end work4all-skill-log ===
-```
-
-**Vor Schritt 4 (Fixes anwenden):** Diesen Block prüfen. Steht dort bereits eine Zeile mit `DXJ0001` und einer Version ≥ der aktuellen, dem Nutzer melden, dass diese Datei nach eigenem Log bereits mit dieser (oder einer neueren) Fassung des Skills bearbeitet wurde, statt unbesehen erneut zu fixen — der Nutzer entscheidet dann, ob trotzdem ein erneuter Lauf sinnvoll ist (z. B. weil zwischenzeitlich manuell im Designer weitergearbeitet wurde).
-
-**Nach Schritt 4:** Eine neue Zeile mit `DXJ0001`, der aktuellen Skill-Version und dem Zeitstempel (Zeitzone Europe/Berlin, siehe `known-issues.md` Eintrag 11) anhängen. Bestehende Zeilen anderer Skills (andere IDs) NIEMALS entfernen oder überschreiben — der Block ist ein append-only-Verlauf über die gesamte Lebenszeit der Datei, auch wenn später andere Fix-Skills auf dieselbe Datei angewendet werden.
+Diese Skill trägt die ID **DXJ0001** (aktuell Version **1.1.0**). Format und vollständige Spezifikation des `work4all-skill-log`-Blocks (inkl. `<Ergebnis>`-Feld, Idempotenz-Check, Rückwärtskompatibilität zu einem älteren `(v1)`-Block) sind zentral dokumentiert in `work4all-reporting-skills:neuen-devexpress-report-skill-anlegen`, `references/fix-log-format.md` — dort auch die vollständige Registry aller vergebenen IDs (`references/skill-id-registry.md`). Wann und wie diese Skill den Block liest und beschreibt: siehe Schritt 7 „Log-Eintrag schreiben" im Arbeitsablauf unten.
 
 **Wichtig für Schritt 5 (Skript-Hygiene):** Der `work4all-skill-log`-Block sieht wie ein Kommentarblock aus, ist aber KEIN toter Kommentar — er darf von der Hygiene-Routine niemals entfernt werden, auch nicht als vermeintlich "wirkungsloser" Kommentar. Vor jeder Hygiene-Passage explizit prüfen, dass der Block (erkennbar an der festen Marker-Zeile `=== work4all-skill-log`) unangetastet bleibt.
 
@@ -66,7 +54,7 @@ Der ursprüngliche Auftrag für diese Skill entstand aus einer echten Regression
 
 Kopiere die hochgeladene `.repx` in ein Arbeitsverzeichnis (z.B. `/tmp/repx_work/`). Öffne sie mit `encoding='utf-8-sig', newline=''`, damit BOM sauber abgetrennt wird, aber die CRLF-Zeilenenden exakt erhalten bleiben (Details dazu und zur `ScriptsSource`-Extraktion in `references/repx-technical-notes.md`). Dekodiere das eingebettete C#-Skript und speichere es separat als lesbare `.cs`-Datei, damit du es normal durchsuchen und lesen kannst.
 
-Prüfe direkt zu Beginn, ob es sich überhaupt um einen strukturell verwandten Report handelt (Bandnamen wie `Sub_POS`, `GROUP_ERP_Nummer`, `GroupFooter_Uebertrag`, Verwendung von `sumCarryoverSum`). Falls die Struktur stark abweicht, sag das dem Nutzer offen — die Muster unten generalisieren nur begrenzt auf komplett andere Reports.
+Prüfe direkt zu Beginn, ob es sich überhaupt um einen strukturell verwandten Report handelt (Bandnamen wie `Sub_POS`, `GROUP_ERP_Nummer`, `GroupFooter_Uebertrag`, Verwendung von `sumCarryoverSum`). Falls die Struktur stark abweicht oder sich die Datei nicht sauber öffnen/parsen lässt, sag das dem Nutzer offen und brich hier ab — die Muster unten generalisieren nur begrenzt auf komplett andere Reports. Ein Abbruch an dieser Stelle (vor Schritt 2) bekommt **keinen** Eintrag im `work4all-skill-log` — es wurde noch nichts inhaltlich geprüft (siehe `references/fix-log-format.md`, Regel 7). Melde den Abbruch stattdessen klar im Chat, inkl. Grund, damit gemeinsam das weitere Vorgehen abgestimmt werden kann.
 
 ### Schritt 2 — Referenz-.repx anfordern (PFLICHT) und Diagnose gegen den Fix-Katalog
 
@@ -74,7 +62,9 @@ Bevor du in die eigentliche Diagnose einsteigst: frag den Nutzer aktiv nach der 
 
 Lies `references/fix-catalog.md`. Gehe die dort beschriebenen Muster (a) bis (e) systematisch durch — jedes ist **musterbasiert** beschrieben (welches Verhalten/welche Codestruktur zu suchen ist), nicht an konkrete Methodennamen oder `Ref`-IDs aus dem ursprünglichen Report gebunden, weil die nächste Report-Variante andere Namen haben wird. Notiere für jeden Fund, welchem Muster er entspricht und welche Sicherheitsstufe laut Katalog gilt. Liegt eine Referenzdatei vor, führe zusätzlich den strukturellen Diff gegen sie durch (siehe „Referenzbeispiel" oben) und bevorzuge dort bestätigt funktionierende Werte/Formulierungen gegenüber einer eigenen Neu-Interpretation des Katalogs.
 
-Prüfe außerdem gegen `references/known-issues.md` — dort sammeln sich Fallen, die in früheren Läufen entdeckt wurden (aktuell v.a. die `sumCarryoverSum`/`Summary`-Falle). Diese Datei ist ein lebendes Dokument: wenn du in diesem Lauf etwas Neues entdeckst, das über den bisherigen Katalog hinausgeht, ergänze sie am Ende (Schritt 8).
+Prüfe außerdem gegen `references/known-issues.md` — dort sammeln sich Fallen, die in früheren Läufen entdeckt wurden (aktuell v.a. die `sumCarryoverSum`/`Summary`-Falle). Diese Datei ist ein lebendes Dokument: wenn du in diesem Lauf etwas Neues entdeckst, das über den bisherigen Katalog hinausgeht, ergänze sie am Ende (Schritt 9).
+
+**Es ist ein vollständig gültiges Ergebnis dieses Schritts, dass kein einziges Muster zutrifft.** Wenn die Diagnose sauber durchlaufen wurde (auch nach einem strukturellen Diff gegen eine vorliegende Referenzdatei) und keiner der Katalog-Einträge greift, wird nichts konstruiert, um trotzdem etwas zu "finden" — das Ergebnis ist dann `keine Änderung nötig` (siehe Schritt 7) und genauso wertvoll wie ein gefundener Fix, weil es dem Nutzer bestätigt, dass die Datei geprüft wurde.
 
 ### Schritt 3 — Befund an den Nutzer melden, bevor automatisch etwas verändert wird
 
@@ -98,15 +88,29 @@ Wenn gewünscht: entferne leere/wirkungslose Print-Event-Handler und rein auskom
 
 Arbeite `references/validation-checklist.md` vollständig ab, bevor irgendetwas ausgeliefert wird. Das ist nicht optional — mehrere der Fehler, die in früheren Läufen passiert sind (verwaiste XML-Verdrahtung, versehentlich entfernte Summary-Elemente), wurden ausschließlich durch diese Checks gefangen, nicht durch bloßes Lesen des Diffs.
 
-### Schritt 7 — Auslieferung
+Konnte ein einzelner Validierungs-Check aus irgendeinem Grund nicht durchgeführt werden (z.B. technische Einschränkung der Umgebung), wird das **nicht stillschweigend übersprungen** — als offener Punkt im Statusbericht in Schritt 8 aufführen.
 
-Liefere die reparierte `.repx` zusammen mit einem Changelog aus. Das Changelog ist für work4all-Mitarbeiter gedacht, die den Report nicht selbst gebaut haben — schreibe es auf Deutsch, als nummerierte Liste, mit einem kurzen Satz pro Änderung: was, wo, warum. Kein Fachjargon ohne Erklärung; die Übertrag-Logik in ein bis zwei Sätzen einordnen, falls die Änderung nicht selbsterklärend ist.
+### Schritt 7 — Log-Eintrag schreiben
+
+Schreibe **unabhängig vom Ergebnis** eine Zeile in den `work4all-skill-log`-Block im eingebetteten Skript, sobald Schritt 2 (Diagnose) tatsächlich abgeschlossen wurde — Format und Ergebnis-Werte: `references/fix-log-format.md`.
+
+- Vor dem Schreiben: Idempotenz-Check aus `fix-log-format.md` Regel 2 durchführen (nur relevant, wenn im Block bereits eine `geändert`-Zeile dieser Skill-ID mit ≥ aktueller Version steht).
+- Wurden in Schritt 4 Fixes tatsächlich angewendet: Ergebnis `geändert`.
+- Wurde die Diagnose vollständig durchlaufen, aber kein Muster traf zu (siehe Hinweis in Schritt 2): Ergebnis `keine Änderung nötig`. Das gilt auch, wenn ausschließlich Skript-Hygiene lief oder ausschließlich "Nur Verdacht"-Funde dokumentiert wurden, ohne dass eine Datei-Anpassung vorgenommen wurde.
+- Existiert noch kein Block (erstmaliger Lauf dieser Skill-Familie auf dieser Datei), lege Kopf- und Fußzeile im `(v2)`-Format neu an.
+- Falls die Datei bereits einen `(v1)`-Block hat: neue Zeile im v2-Format anhängen und Kopfzeile auf `(v2)` anheben (siehe `fix-log-format.md`).
+
+### Schritt 8 — Auslieferung
+
+Liefere die reparierte `.repx` zusammen mit einem Changelog aus. Das Changelog ist für work4all-Mitarbeiter gedacht, die den Report nicht selbst gebaut haben — schreibe es auf Deutsch, als nummerierte Liste, mit einem kurzen Satz pro Änderung: was, wo, warum. Kein Fachjargon ohne Erklärung; die Übertrag-Logik in ein bis zwei Sätzen einordnen, falls die Änderung nicht selbsterklärend ist. Auch wenn das Ergebnis `keine Änderung nötig` war, liefere einen kurzen Abschlussbericht statt gar nichts — das bestätigt dem Nutzer, dass geprüft wurde.
 
 **Dateibenennung — PFLICHT:** Jede ausgelieferte `.repx`-Datei (die reparierte Datei ebenso wie jede neu erstellte Referenz-`.repx`) bekommt vor der Auslieferung einen Zeit-/Datumsstempel an den Dateinamen angehängt, Format `_JJJJ-MM-TT_hh-mm` (aktuelle Systemzeit, z.B. per `date '+%Y-%m-%d_%H-%M'` ermittelt), unmittelbar vor der Dateiendung. Grund: bei mehreren Läufen mit ähnlichen Dateinamen (z.B. mehrere Referenzversionen im zeitlichen Verlauf) lässt sich sonst nicht mehr zweifelsfrei nachvollziehen, welche Datei aus welchem Lauf stammt — das ist in der Praxis bereits zu Verwechslungen beim Vergleich von Läufen an unterschiedlichen Tagen gekommen. Dies ist kein optionaler Stil-Punkt, sondern fester Teil der Auslieferung.
 
 Halte den Basisnamen dabei bewusst KURZ (kurzer Report-Name + ggf. Versionskürzel, keine ausführliche Beschreibung des Inhalts im Dateinamen) — ein langer Basisname lässt den Zeitstempel am Ende in der UI/Downloadliste abgeschnitten wirken oder gar nicht mehr sichtbar sein, was den eigentlichen Zweck des Stempels zunichtemacht. Ausführliche Beschreibungen gehören ins Changelog, nicht in den Dateinamen. Beispiel: `dxAio_template_REFERENZ_v2_2026-08-28_10-29.repx` (nicht `dxAio_template_REFERENZ_v2_KeepTogetherFalse_Mindesthoehe_2026-08-28_10-29.repx`).
 
-### Schritt 8 — `known-issues.md` pflegen
+Schließe **immer** mit einem kurzen Statusblock ab, welche Teile dieses Skills in diesem Lauf **nicht** ausgeführt wurden und warum (z.B. "Skript-Hygiene nicht durchgeführt — nicht angefragt", "Validierungs-Check X übersprungen, weil kein Hinweis auf einen zwischenzeitlichen Designer-Speichervorgang vorlag", "Referenzdatei nicht verfügbar — Diagnose ausschließlich anhand Fix-Katalog/known-issues.md"). Gab es keine Auslassungen, reicht ein kurzer positiver Vermerk. Ziel: der Nutzer soll aus dem Bericht allein erkennen können, worüber noch gesprochen werden müsste.
+
+### Schritt 9 — `known-issues.md` pflegen
 
 Wenn in diesem Lauf ein neues Muster, eine neue Falle oder eine überraschende DevExpress-Eigenheit auffällt (etwas, das nicht bereits im Fix-Katalog oder in known-issues.md steht), ergänze `references/known-issues.md` um einen neuen Eintrag nach demselben Format wie die bestehenden. So wird die Skill mit jedem bearbeiteten Report robuster, statt bei jedem Lauf wieder bei null anzufangen.
 
@@ -116,4 +120,9 @@ Wenn in diesem Lauf ein neues Muster, eine neue Falle oder eine überraschende D
 - `references/fix-catalog.md` — die bekannten Problem-Muster, ihre Ursache, der empfohlene Fix, und wie sicher es ist, ihn automatisch anzuwenden.
 - `references/validation-checklist.md` — die Checks, die vor jeder Auslieferung durchlaufen werden müssen.
 - `references/known-issues.md` — lebendes Dokument bekannter Fallen und Überraschungen, wächst mit jedem Lauf.
-- `work4all-reporting-skills:neuen-devexpress-report-skill-anlegen`, `references/fix-log-format.md` und `references/skill-id-registry.md` (Schwester-Skill) — vollständige Spezifikation des `work4all-skill-log`-Blocks und aller vergebenen Skill-IDs.
+- `references/fix-log-format.md` (in `neuen-devexpress-report-skill-anlegen`) — Spezifikation des `work4all-skill-log`-Blocks inkl. Ergebnis-Werten (`geändert` / `keine Änderung nötig` / `abgebrochen: ...`) und der vollständigen Skill-ID-Registry, maßgeblich für Schritt 7.
+
+## Versionierung dieses Skills
+
+- v1.0.0 — Erstfassung plus nachträgliche Erweiterungen vor Einführung dieser Versionshistorie (Registry-Eintrag `DXJ0001`, 2026-08-28): Diagnose-/Fix-Methodik mit drei Sicherheitsstufen (Muster a-f), optionale Skript-Hygiene, Validierungs-Checkliste, `known-issues.md` als lebendes Dokument; danach ergänzt um Muster (g) „Mindesthöhen statt KeepTogether", die verpflichtende Referenz-.repx-Anforderung vor jedem inhaltlichen Fix, und die Sektion „Bekannte Grenzen".
+- v1.1.0 — Neuer Schritt 7 „Log-Eintrag schreiben" ergänzt: schreibt jetzt bei jedem abgeschlossenen Lauf einen Eintrag im `work4all-skill-log`-Block, auch ohne Änderung (`keine Änderung nötig`), gemäß `fix-log-format.md` v2. Schritt 8 „Auslieferung" um einen verpflichtenden Statusbericht zu nicht ausgeführten Teilen ergänzt. Schritt 1 und 2 um explizite Abbruch- bzw. Notwendigkeits-Klarstellung ergänzt. Abschnitt „Skill-ID, Version & Fix-Log" auf das neue `(v2)`-Log-Format samt `<Ergebnis>`-Feld aktualisiert und auf Schritt 7 verweisend gekürzt (statt Detail-Duplikat).

@@ -2,7 +2,7 @@
 name: neuen-devexpress-report-skill-anlegen
 description: Legt einen neuen work4all-DevExpress-Report-Skill (Verbesserungs-Typ wie "fix-folgeseiten-uebertrag-problem" oder Neuerstellungs-Typ wie "neuen-devexpress-listenreport-bauen") strukturiert an und liefert ihn sowohl an das Cowork-Plugin als auch an das lokale GitHub-Repo C:\GitHub\work4all-claude-skills aus. Unbedingt verwenden, wenn der Nutzer einen neuen DevExpress-Skill anlegen, erweitern oder strukturieren möchte — auch bei kurzen Trigger-Sätzen wie "create new dx skill", "neuen DX Skill erstellen", "neuen Skill anlegen", "DX Skill Bauplan", "mach daraus einen skill" (im DevExpress/Report-Kontext), oder wenn der Nutzer nach Skill-ID, Versionierung, Fix-Log oder einer einheitlichen Struktur für Report-Skills fragt.
 skill_id: DXJ0003
-version: 0.1.0
+version: 0.2.0
 ---
 
 # Neuen DevExpress-Report-Skill anlegen
@@ -27,6 +27,14 @@ Beide Typen teilen sich dieselben Pflichtbausteine (siehe unten) — nur "Schrit
 - welche Referenzdateien geplant sind
 
 Erst nach Bestätigung durch den Nutzer wird der Skill tatsächlich geschrieben. Diese Regel gilt für JEDEN neuen Skill, nicht nur für Skills, die mit diesem Meta-Skill selbst gebaut werden — sie ist ein permanenter Teil des Prozesses.
+
+## Standing Rule: Rückfrage statt Annahme, kritische Prüfung statt Automatismus
+
+Diese Regel gilt für **jeden** Report-Skill in diesem Plugin, bei **jedem** Schritt — nicht nur bei den unter Pflichtbaustein 3 beschriebenen Sicherheitsstufen für einzelne Feld-/Code-Änderungen, sondern auch für Prozessentscheidungen (z.B.: reicht die vorliegende Referenz wirklich aus? soll ein optionaler Schritt wie Skript-Hygiene laufen? ist eine Annahme über eine Datenbankstruktur wirklich abgesichert?):
+
+- **Bei Unsicherheit wird immer nachgefragt, nie geraten oder halluziniert.** Nur bei 100%iger Sicherheit — d.h. eindeutig durch eine vorliegende Referenzdatei, Spezifikation oder Nutzeraussage belegt — darf eine Anpassung an Logik, Daten oder Struktur eigenständig vorgenommen werden. "Klingt plausibel" oder "ist in ähnlichen Reports üblich" reicht dafür nicht.
+- **Kritisch prüfen, ob eine Anpassung überhaupt nötig ist, bevor sie vorgeschlagen wird.** Nicht jede technisch mögliche Änderung sollte gemacht werden, nur weil sie machbar ist — insbesondere bei Refactoring-artigen Vorschlägen (Skript-Hygiene, "sauberer" wirkende Alternativen) muss der tatsächliche Nutzen die Kosten (Regressionsrisiko, Review-Aufwand) rechtfertigen. Im Zweifel: nichts anfassen und stattdessen dem Nutzer die Beobachtung mitteilen.
+- Diese Regel ersetzt nicht die dreistufige Einordnung aus Pflichtbaustein 3, sondern steht darüber: Sie gilt auch dort, wo Pflichtbaustein 3 keine explizite Stufe vorsieht (z.B. bei der Frage, ob überhaupt weitergemacht werden soll).
 
 ## Pflichtbausteine jedes Report-Skills
 
@@ -54,7 +62,9 @@ Ein nummerierter Ablauf, typtypisch:
 
 ### 3. Schlüsse / Entscheidungspunkte (Sicherheitsstufen)
 
-Jede Änderung an einer bestehenden Datei (Verbesserungs-Typ) oder jede Annahme beim Neubau (Neuerstellungs-Typ) wird einer von drei Sicherheitsstufen zugeordnet:
+Bevor eine Änderung überhaupt einer Stufe zugeordnet wird, steht die Frage aus der Standing Rule oben: **ist sie wirklich nötig?** Eine Änderung, die zwar korrekt und plausibel wäre, aber kein reales Problem löst oder keine gestellte Anforderung erfüllt, wird nicht vorgeschlagen — unabhängig davon, wie sicher sie technisch wäre.
+
+Jede Änderung an einer bestehenden Datei (Verbesserungs-Typ) oder jede Annahme beim Neubau (Neuerstellungs-Typ), die diese Prüfung besteht, wird einer von drei Sicherheitsstufen zugeordnet:
 
 1. **Automatisch sicher** — wird ohne Rückfrage angewendet, wenn eine bestätigte Referenz/Spezifikation eindeutig vorliegt.
 2. **Vorschlag mit Rückfrage** — plausibel, aber nicht zweifelsfrei belegt; wird dem Nutzer zur Bestätigung vorgelegt, bevor es angewendet wird.
@@ -88,9 +98,22 @@ Vollständige Spezifikation: `references/fix-log-format.md`. Kurzfassung: jeder 
 
 Vollständiger Ablauf: `references/ablage-und-versionierung.md`. Kurzfassung: jeder neue oder geänderte Skill wird IMMER an zwei Orten ausgeliefert — als Cowork-Plugin-Paket (`SendUserFile`) und im lokalen GitHub-Repo `C:\GitHub\work4all-claude-skills\skills\...` (via Device-Bridge: stage → SendUserFile → `device_commit_files`, da für dieses Gerät kein `device_bash` verfügbar ist). Dazu liefert Claude immer eine fertige Commit-Message (Titel + Grund + Änderungen-Liste) im etablierten Stil des Nutzers.
 
+**Umgebungs-Hinweis:** Steht in der aktuellen Session keine Device-Bridge zur Verfügung (z.B. normale Claude.ai-Chat-Umgebung ohne `SendUserFile`/`device_commit_files`), kann dieser Baustein nicht automatisch ausgeführt werden. In dem Fall gilt Pflichtbaustein 10 ("Nicht ausgeführte Teile melden"): Claude liefert die geänderten Dateien als herunterladbare Datei(en) plus die fertige Commit-Message, weist aber explizit darauf hin, dass die eigentliche Ablage an beiden Orten manuell durch den Nutzer (oder in einer späteren Cowork-Session mit Device-Zugriff) erfolgen muss.
+
+### 9. Ausführungsprotokoll auch ohne Änderung
+
+Jeder Verbesserungs-Typ-Skill hinterlässt bei **jeder abgeschlossenen Anwendung** einen Log-Eintrag im `work4all-skill-log`-Block — nicht nur, wenn tatsächlich etwas geändert wurde. Vollständige Spezifikation inkl. der drei zulässigen Ergebnis-Werte (`geändert`, `keine Änderung nötig`, `abgebrochen: <Kurzgrund>`) und der genauen Abgrenzung, wann ein nicht zu Ende geführter Lauf überhaupt eine Zeile bekommt: `references/fix-log-format.md`, Regel 7.
+
+Zweck: Ohne diesen Eintrag lässt sich aus der Datei allein nicht unterscheiden, ob ein Skill auf sie angewendet wurde und nichts fand, oder ob er nie angewendet wurde. Beides sieht ohne Protokoll identisch aus — genau das soll dieser Baustein verhindern.
+
+### 10. Nicht ausgeführte Teile melden
+
+Jeder Skill-Lauf schließt mit einem kurzen, expliziten Status ab, welche im Skill vorgesehenen Teile **nicht** ausgeführt wurden — unabhängig davon, ob der Grund harmlos ist (z.B. optionale Skript-Hygiene nicht angefragt) oder eine echte Lücke (z.B. Referenzdatei fehlte, ein Validierungsschritt konnte technisch nicht laufen, die Device-Bridge war nicht verfügbar). Für jeden übersprungenen Teil: **was** wurde übersprungen, **warum**, und was das für das weitere Vorgehen bedeutet — damit der Nutzer gezielt entscheiden kann, wie es weitergeht, statt eine Lücke erst später zufällig zu bemerken. Ein Lauf ohne jede Auslassung darf das kurz und positiv vermerken ("alle Schritte vollständig durchlaufen"); es muss keine leere Liste erzwungen werden.
+
 ## Versionierung dieses Meta-Skills
 
 - v0.1.0 — Erstfassung: Bauplan mit den 8 Pflichtbausteinen, Übersicht-zuerst-Regel, Skill-ID-Format `DX<Kürzel><4-stellig>`.
+- v0.2.0 — Standing Rule "Rückfrage statt Annahme, kritische Prüfung statt Automatismus" ergänzt (gilt übergreifend, nicht nur für Feld-/Code-Entscheidungen). Pflichtbaustein 3 verweist jetzt explizit auf die Notwendigkeitsprüfung vor der Stufen-Einordnung. Zwei neue Pflichtbausteine ergänzt: 9 "Ausführungsprotokoll auch ohne Änderung" (verweist auf `fix-log-format.md` v2 mit `<Ergebnis>`-Feld) und 10 "Nicht ausgeführte Teile melden". Pflichtbaustein 8 um einen Umgebungs-Hinweis ergänzt (Device-Bridge nicht überall verfügbar).
 
 ## Referenzdateien im Überblick
 

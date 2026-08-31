@@ -1,6 +1,6 @@
 # Known Issues — lebendes Dokument
 
-Diese Datei sammelt Fallen und Überraschungen, die über den generischen Fix-Katalog hinausgehen — Dinge, die sich erst beim tatsächlichen Bearbeiten/Testen konkreter Reports gezeigt haben. Bei jedem neuen Report-Lauf: erst hier nachsehen, ob ein beobachtetes Problem schon bekannt ist; am Ende eines Laufs: neue Erkenntnisse hier ergänzen (siehe SKILL.md, Schritt 8).
+Diese Datei sammelt Fallen und Überraschungen, die über den generischen Fix-Katalog hinausgehen — Dinge, die sich erst beim tatsächlichen Bearbeiten/Testen konkreter Reports gezeigt haben. Bei jedem neuen Report-Lauf: erst hier nachsehen, ob ein beobachtetes Problem schon bekannt ist; am Ende eines Laufs: neue Erkenntnisse hier ergänzen (siehe SKILL.md, Schritt 9).
 
 Format pro Eintrag: **Was passiert ist → Was man daraus lernt → Wie man es künftig vermeidet.**
 
@@ -121,7 +121,7 @@ Nach Auslieferung meldete der Nutzer: das Wort "Übertrag €" erschien zwar kor
 
 **Was man daraus lernt:** `date` ohne explizite Zeitzone spiegelt die Zeitzone der Ausführungsumgebung wider, nicht die des Nutzers — das ist bei einer Cloud-Sandbox nicht automatisch dieselbe Zeitzone, auch wenn man es beim Arbeiten leicht annimmt. Der Fehler fällt nicht durch einen Parse- oder Validierungsfehler auf, sondern nur durch einen Soll-Ist-Abgleich der Uhrzeit mit dem Kunden.
 
-**Wie man es künftig vermeidet:** Zeitstempel für Dateinamen IMMER mit expliziter Zielzeitzone erzeugen: `TZ=Europe/Berlin date '+%Y-%m-%d_%H-%M'`. Niemals bloßes `date` ohne `TZ=`-Präfix verwenden, auch wenn die Session-Uhrzeit auf den ersten Blick plausibel wirkt. Siehe SKILL.md Schritt 7.
+**Wie man es künftig vermeidet:** Zeitstempel für Dateinamen IMMER mit expliziter Zielzeitzone erzeugen: `TZ=Europe/Berlin date '+%Y-%m-%d_%H-%M'`. Niemals bloßes `date` ohne `TZ=`-Präfix verwenden, auch wenn die Session-Uhrzeit auf den ersten Blick plausibel wirkt. Siehe SKILL.md Schritt 8.
 
 ---
 
