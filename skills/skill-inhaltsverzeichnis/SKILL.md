@@ -1,8 +1,9 @@
 ---
 name: skill-inhaltsverzeichnis
 description: Zeigt eine kompakte Gesamtübersicht aller Fix-/Unterpunkt-IDs über alle work4all-DevExpress-Report-Skills hinweg, mit Kurzbeschreibung und Sicherheitsstufe je ID. Verwenden, wenn der Nutzer wissen will, welche Fixes/Probleme ein Skill (insbesondere `fix-folgeseiten-uebertrag-problem`) überhaupt abdeckt, nach einer bestimmten Fix-ID (z.B. "DXJ0001.F") fragt, ein "Inhaltsverzeichnis" oder eine "Übersicht der Skills/IDs" möchte, oder bevor ein Verbesserungs-Skill läuft kurz zusammengefasst sehen will, was dieser Skill an Einzelfixes kennt.
-skill_id: DXJ0004
-version: 1.0.0
+metadata:
+  skill_id: DXJ0004
+  version: 1.0.3
 ---
 
 # Skill-Inhaltsverzeichnis

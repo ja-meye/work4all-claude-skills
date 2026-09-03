@@ -1,5 +1,19 @@
 # .repx-Format — technische Basis (für alle Korrektur-Skills)
 
+## Inhalt
+
+- Zweck
+- Dateiaufbau
+- Sichere Bearbeitungs-Pipeline (Python)
+- DevExpress-Bandmodell (Kurzreferenz)
+- `BeforePrint` vs. `PrintOnPage`
+- XML/Skript-Paritätsregel
+- Der `<Localization>`-Block — indirekte Speicherung von Designer-Werten
+- Bekannte generische Falle: `<Summary Running="...">`-Elemente
+- Verweis auf fachspezifische Vertiefung
+- Sammlungen: `ItemN` muss lückenlos sein (Stand 04.09.2026)
+- Phasentrennung: `BeforePrint` läuft für das GESAMTE Dokument vor jedem `PrintOnPage`
+
 ## Zweck
 
 Diese Datei bündelt die generische `.repx`-Dateiformat-Mechanik, die für **jeden** Skill gilt, der eine bestehende `.repx`-Datei liest, ihr eingebettetes C#-Skript bearbeitet oder ihr rohes XML verändert — unabhängig vom fachlichen Thema des jeweiligen Fixes. Jeder Korrektur-Skill (Verbesserungs-Typ) **muss** diese Datei vor der ersten inhaltlichen `.repx`-Bearbeitung lesen, statt die Mechanik neu zu erarbeiten, aus dem Gedächtnis zu rekonstruieren oder unabhängig zu duplizieren. So wird eine einmal gefundene Falle (z. B. der `<Localization>`-Block, die Escaping-Reihenfolge) nicht in jedem neuen Skill erneut übersehen.
@@ -74,3 +88,28 @@ DevExpress-Summenfunktionen, die über eine Seite hinaus fortlaufend Werte mitf�
 ## Verweis auf fachspezifische Vertiefung
 
 Für die themenspezifische Anwendung dieser Mechanik (z. B. Übertrag-/Folgeseiten-Muster) siehe die Referenzdateien des jeweiligen Fach-Skills, z. B. `fix-folgeseiten-uebertrag-problem/references/repx-technical-notes.md` und `fix-catalog.md`. Diese Datei hier wird bei neuen Erkenntnissen nur ergänzt, wenn die Erkenntnis wirklich themenneutral/generisch ist — fachspezifische Funde gehören in die Referenz des jeweiligen Fach-Skills.
+
+---
+
+## Sammlungen: `ItemN` muss lückenlos sein (Stand 04.09.2026)
+
+Kind-Elemente einer Sammlung (`<Controls>`, `<SubBands>`, `<Rows>`, `<Cells>`, `<ExpressionBindings>`, `<LocalizationItems>`, …) heißen im `.repx`-Format generisch `Item1`, `Item2`, … `ItemN`. Die Nummerierung ist **nicht** dekorativ: DevExpress löst die Kinder darüber auf, und zwar in lückenloser Folge ab `Item1`. Wer ein Element entfernt (oder eines einfügt), muss die betroffene Sammlung neu durchnummeriert schreiben — Öffnungs- und Schließ-Tag gleichermaßen.
+
+Passiert das nicht, wird **alles hinter der ersten Lücke stillschweigend ignoriert**. Es gibt keinerlei Fehlermeldung: Die Datei bleibt wohlgeformtes XML, lädt im Designer, und ein Werte-Diff gegen eine Referenz meldet „identisch". Konkret beobachtet: ein neu angelegter `<Localization>`-Höheneintrag stand als `Item1538` hinter einer Lücke in einem 1532-Einträge-Block und war damit wirkungslos — sichtbar nur daran, dass das betroffene Band im Enduser-Designer seine Höhe nicht übernahm.
+
+Gegenprobe zur Erinnerung: vom Designer geschriebene Dateien sind an **jeder** Stelle lückenlos. `Ref="N"`-Nummern dagegen dürfen Lücken haben (kommen auch in Designer-Dateien vor) — das ist ein anderer Mechanismus (Ziel-IDs für `Component="#Ref-N"`-Verweise, nur Eindeutigkeit zählt).
+
+Automatisierte Prüfung: Check `C04` in `fix-folgeseiten-uebertrag-problem/scripts/validate_repx.py`.
+
+## Phasentrennung: `BeforePrint` läuft für das GESAMTE Dokument vor jedem `PrintOnPage`
+
+Der Abschnitt „BeforePrint vs. PrintOnPage" weiter oben beschreibt die Reihenfolge pro Element. Die praktisch viel wichtigere Konsequenz ist die **dokumentweite** Phasentrennung:
+
+1. **Generierungsphase:** alle `BeforePrint`-Ereignisse des gesamten Dokuments.
+2. **Druck-/Renderphase:** alle `PrintOnPage`-Ereignisse.
+
+Daraus folgt: Eine Variable, die in einem `PrintOnPage`-Handler gesetzt wird, hat in **jedem** `BeforePrint` noch ihren Initialwert — unabhängig davon, ob der Handler an einem Band oder an einem einzelnen Control hängt, und unabhängig von der Seitenzahl. Wer in `BeforePrint` eine seitenabhängige Entscheidung treffen muss, braucht dafür eine Größe, die selbst ausschließlich aus `BeforePrint`-Ereignissen gespeist wird — in der `dxAio_template`-Familie ist das `pageCounter` (hochgezählt im `PageFooter_BeforePrint`, das DevExpress vor dem Seiteninhalt auslöst, um die Fußzeilenhöhe zu reservieren; `pageCounter == 1` bedeutet damit zuverlässig „Seite 1").
+
+Umgekehrt gilt: Layout-relevante Eigenschaften (`HeightF`, `SizeF`, `CanGrow`) in `PrintOnPage` zu setzen ist wirkungslos — die Layoutberechnung ist dort abgeschlossen. Sie gehören in `BeforePrint`.
+
+Automatisierte Prüfungen: Checks `C11`, `C12`, `C13` in `validate_repx.py`.

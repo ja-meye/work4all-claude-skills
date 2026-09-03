@@ -1,8 +1,9 @@
 ---
 name: neuen-devexpress-listenreport-bauen
 description: Baut aus einem Mockup (PDF/Bild) und einer bestehenden work4all-DevExpress-.repx-Vorlage einen neuen DevExpress-Listenreport (z.B. Kundenliste, Lieferantenliste, Artikelliste). Erstellt zuerst eine Excel-Feldzuordnungstabelle zur Abstimmung mit dem Fachbereich, übernimmt danach Joins/Query aus einer SQL- oder Crystal-Reports-Query in eine neue DevExpress-SqlDataSource und baut die neue .repx mit demselben Parameter-/ID-Filtermuster wie die Vorlage. Verwenden, wenn der Nutzer einen neuen work4all-Listenreport auf Basis eines Reports/Mockups bauen will, eine Excel-Feldzuordnung erstellen will, eine alte SQL-/Crystal-Reports-Query übernehmen möchte, oder "Report-Bauplan", "Feldzuordnung" oder "neuen Listenreport" erwähnt — auch ohne die Wörter "Skill" oder "DevExpress", z.B. "ich habe ein Mockup für einen neuen Report", "welche Felder kommen aus welcher Tabelle", "ich gebe dir die SQL von einem alten Report, bau das ein".
-skill_id: DXJ0002
-version: 1.2.0
+metadata:
+  skill_id: DXJ0002
+  version: 1.2.1
 ---
 
 # Neuen DevExpress-Listenreport aus Mockup + Vorlage bauen
@@ -79,7 +80,7 @@ Liefere aus:
 
 ## Skill-ID, Version & Fix-Log-Startpunkt
 
-Diese Skill trägt die ID **DXJ0002** (aktuell Version **1.2.0**). Format und vollständige Registry sind zentral dokumentiert in `work4all-reporting-skills:neuen-devexpress-report-skill-anlegen`, `references/fix-log-format.md` und `references/skill-id-registry.md`.
+Diese Skill trägt die ID **DXJ0002** (aktuell Version **1.2.0**). Format und vollständige Registry sind zentral dokumentiert in `work4all-reporting-skills:neuen-devexpress-report-skill-anlegen`, `../neuen-devexpress-report-skill-anlegen/references/fix-log-format.md` und `../neuen-devexpress-report-skill-anlegen/references/skill-id-registry.md`.
 
 Jede neu gebaute `.repx` bekommt in Schritt 4 (Layout bauen) ganz oben im eingebetteten Skript einen initialen Log-Block im aktuellen Format `(v2)`, der die Herkunft der Datei dokumentiert — damit spätere Fix-Skills (z.B. `fix-folgeseiten-uebertrag-problem`) wissen, dass diese Datei maschinell von dieser Skill erzeugt wurde, mit welcher Version, wann und mit welchem Ergebnis. **Seit v1.2.0 gehört die Anker-Zeile direkt danach zwingend dazu** (siehe `fix-log-format.md`, Abschnitt „Überlebensfähigkeit bei einem Designer-Speichervorgang") — ohne sie kann ein ScriptsSource-Block, der nur aus Kommentaren besteht, beim ersten Speichern im DevExpress Report Designer restlos verschwinden:
 
@@ -90,7 +91,7 @@ Jede neu gebaute `.repx` bekommt in Schritt 4 (Layout bauen) ganz oben im eingeb
 private static readonly string _work4allLogAnchor = "keep-scriptssource-alive";
 ```
 
-Beim Erstbau ist das Ergebnis immer `geändert` (es wird ja eine neue Datei erzeugt). Wird diese Skill **erneut** auf einen bereits von ihr gebauten Report angewendet — z.B. ein Korrekturlauf, nachdem der Fachbereich Rückmeldung zur Feldzuordnung gegeben hat — gilt dieselbe Ergebnis-Konvention wie bei Verbesserungs-Skills: `geändert`, wenn tatsächlich etwas am Layout/an der Query angepasst wurde, `keine Änderung nötig`, wenn die Prüfung ergab, dass alles bereits passt. Vollständige Regeln inkl. Idempotenz-Check: `references/fix-log-format.md`.
+Beim Erstbau ist das Ergebnis immer `geändert` (es wird ja eine neue Datei erzeugt). Wird diese Skill **erneut** auf einen bereits von ihr gebauten Report angewendet — z.B. ein Korrekturlauf, nachdem der Fachbereich Rückmeldung zur Feldzuordnung gegeben hat — gilt dieselbe Ergebnis-Konvention wie bei Verbesserungs-Skills: `geändert`, wenn tatsächlich etwas am Layout/an der Query angepasst wurde, `keine Änderung nötig`, wenn die Prüfung ergab, dass alles bereits passt. Vollständige Regeln inkl. Idempotenz-Check: `../neuen-devexpress-report-skill-anlegen/references/fix-log-format.md`.
 
 Zeitstempel immer mit Zeitzone Europe/Berlin erzeugen (`TZ=Europe/Berlin date '+%Y-%m-%dT%H:%M:%S'` bzw. äquivalent in Python — ohne `%z`, der Log-Zeitstempel wird bewusst **ohne** UTC-Offset-Suffix geschrieben, siehe `fix-log-format.md`), nicht die UTC-Zeit der Session-Umgebung — das war schon beim Übertrag-Fix-Skill eine Fehlerquelle (siehe dort `known-issues.md` Eintrag 11).
 
@@ -99,7 +100,7 @@ Zeitstempel immer mit Zeitzone Europe/Berlin erzeugen (`TZ=Europe/Berlin date '+
 - `references/repx-technische-notizen.md` — Base64-SqlDataSource-Mechanik, Ref-ID-Eindeutigkeit, XML-Escaping im eingebetteten SQL, Parameter-/Filtermuster, Farbformat-Hinweis.
 - `references/excel-bauplan-vorlage.md` — Aufbau der Feldzuordnungs-Excel (Spalten, Legende, Beispielblock, Farbcodierung).
 - `references/validierung-vor-auslieferung.md` — die Prüfungen, die vor jeder Auslieferung laufen müssen, inkl. wiederverwendbarem Python-Schnipsel.
-- `references/fix-log-format.md` (in `neuen-devexpress-report-skill-anlegen`) — Spezifikation des `work4all-log`-Blocks, maßgeblich für Schritt 4 und für Korrekturläufe.
+- `../neuen-devexpress-report-skill-anlegen/references/fix-log-format.md` (in `neuen-devexpress-report-skill-anlegen`) — Spezifikation des `work4all-log`-Blocks, maßgeblich für Schritt 4 und für Korrekturläufe.
 
 ## Versionierung dieses Skills
 

@@ -1,0 +1,15 @@
+{
+  "skills": [
+    "fix-folgeseiten-uebertrag-problem"
+  ],
+  "query": "Hier ist die zu reparierende dxAio_template.repx. Als Referenz nimm bitte dxAio_template_DEBUG_HeightProbe_v31_FINAL.repx.",
+  "files": [
+    "<repx-datei-aus-M001>"
+  ],
+  "expected_behavior": [
+    "Erkennt an Dateiname (DEBUG/PROBE/v31) und am Validator-Lauf, dass die Referenz eine Diagnose-Zwischenfassung ist",
+    "Laesst validate_repx.py auf der REFERENZDATEI selbst laufen und meldet deren FAILs (C11, C12, C14, C16)",
+    "Uebernimmt keinen Code 1:1 aus dieser Referenz, nutzt sie hoechstens als Strukturvergleich",
+    "Weist den Nutzer auf das geringere Vertrauensniveau hin, bevor Fixes angewendet werden"
+  ]
+}

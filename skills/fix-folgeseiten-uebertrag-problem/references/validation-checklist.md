@@ -26,6 +26,27 @@ Verpflichtend vor jeder Auslieferung einer bearbeiteten `.repx`. Jeder einzelne 
 
 12. **Keine rohen `\r`/`\n`-Zeichen im re-escapten `ScriptsSource`-Attributwert (PFLICHT, seit 31.08.).** Nach dem Schreiben den rohen, noch escapten Attributwert (vor `html.unescape`) darauf prüfen, dass er keine literalen `\r`- oder `\n`-Zeichen mehr enthält — nur noch `&#xD;&#xA;`-Entities (`raw_value.count('\r') == 0 and raw_value.count('\n') == 0`). **Bekannte Falle:** Fehlt vor dem finalen `\n` → `&#xD;&#xA;`-Schritt die Normalisierung der Zeilenenden auf reines `\n` (siehe `repx-technical-notes.md` Schritt 4.3), bleibt bei jedem Zeilenumbruch im GESAMTEN Skript ein rohes `\r` unmittelbar vor dem neu kodierten `&#xD;&#xA;` stehen — sichtbar als Leerzeile nach jeder einzelnen Zeile beim Öffnen im Designer/Editor, aber unsichtbar in Punkt 1 (XML bleibt wohlgeformt) und in einem reinen Struktur-Diff. Siehe `known-issues.md` Eintrag 13 für den konkreten Vorfall. Dieser Check hätte ihn vor der Auslieferung gefangen.
 
+## 13.–16. Neue Pflichtpunkte seit 04.09.2026
+
+13. **`ItemN`-Sammlungen lückenlos.** Nach jedem Entfernen/Einfügen eines Sammlungs-Kindes muss jede `<...>`-Sammlung ihre Kinder lückenlos als `Item1..ItemN` benennen. Eine Lücke führt dazu, dass DevExpress alles dahinter still ignoriert — die Datei bleibt dabei wohlgeformt und alle anderen Checks grün. Siehe `known-issues.md` Eintrag 22.
+14. **Kein in `PrintOnPage` gesetztes Flag wird in einem `BeforePrint`-Handler gelesen.** Die PrintOnPage-Phase läuft für das gesamte Dokument nach allen BeforePrint-Ereignissen; solche Flags sind dort immer `false`. Schreibzugriffe (Reset) sind erlaubt. Siehe `known-issues.md` Eintrag 23.
+15. **Keine `HeightF`-Zuweisung in einem `PrintOnPage`-Handler**, und umgekehrt: abgesenkte Design-Höhen brauchen zwingend eine Wiederherstellung in `BeforePrint`. Siehe `known-issues.md` Eintrag 24.
+16. **Kein Diagnose-/Debug-Code in der Auslieferung** (`_dbgHelper`-artige Felder, Debug-Label, `Diagnose-Test`-Kommentare) — auch dann nicht, wenn er aus einer Referenzdatei stammt. Siehe `known-issues.md` Eintrag 27.
+
+17. **Padding-Positionen aus der Datei ableiten, nicht aus der Doku.** `Padding` ist `Left,Right,Top,Bottom,Dpi` — Top ist Position 3. Vor jeder Padding-Änderung die Reihenfolge gegen die vorhandenen `Padding.LeftF`/`Padding.RightF`-Bindungen prüfen (Check `C17`). Check `C18` benennt zusätzlich jede Padding-Änderung gegenüber der Baseline im Klartext (`Right 0->10`) — diese Zeile vor der Auslieferung lesen und gegen die Absicht abgleichen. Siehe `known-issues.md` Eintrag 28.
+
+## Automatisierter Check-Index: `scripts/validate_repx.py`
+
+Alle Punkte dieser Checkliste sind in `scripts/validate_repx.py` als ausführbare Checks `C01`–`C19` hinterlegt. Aufruf:
+
+```bash
+python3 scripts/validate_repx.py <bearbeitet.repx> --baseline <original.repx>
+```
+
+Das Skript gibt eine Tabelle mit `OK`/`FAIL`/`WARN` je Check aus und liefert Exit-Code 1, sobald ein FAIL auftritt. **Verbindlich:** nach *jeder* Bearbeitungsrunde laufen lassen, nicht nur einmal am Ende — und zusätzlich einmal **auf der Referenzdatei selbst** (Punkt 11, Selbst-Audit). Ein FAIL wird behoben oder im Bericht ausdrücklich als bewusste Abweichung begründet; ein `WARN` mindestens gelesen.
+
+Schlägt ein Check an, ohne dass ein echter Fehler vorliegt (Fehlalarm), wird **der Check nachgeschärft** und die Verschärfung hier vermerkt — nicht der Befund ignoriert.
+
 ## Praktischer Hinweis
 
 Diese Checks lassen sich alle als kurze Python-Snippets direkt gegen die extrahierte `.cs`-Datei bzw. die rohe `.repx`-XML laufen lassen — schneller und zuverlässiger, als jede Änderung einzeln von Hand nachzuverfolgen. Es lohnt sich, ein kleines Validierungsskript zu bauen (Parsing, Ref-Zählung, Methodenabgleich mit korrektem `<Scripts>`-Scoping, Klammernzählung, Summary-Zählung, BOM-Check) und es nach *jeder* Bearbeitungsrunde erneut laufen zu lassen, nicht nur einmal ganz am Ende.

@@ -2,18 +2,22 @@
 
 Lebendes Dokument (analog zu `known-issues.md` der Fach-Skills) — bei jeder inhaltlichen Überarbeitung eines Verbesserungs-Skills wird diese Tabelle im selben Zug mitgepflegt (siehe `SKILL.md`, Schritt 2). Quelle der Wahrheit für den Inhalt jeder ID bleibt aber immer der jeweilige Fach-Skill (`fix-catalog.md` bzw. `SKILL.md`, Abschnitt „Unterpunkt-IDs") — diese Tabelle ist eine Kopie zur schnellen Übersicht, kein Ersatz.
 
-## DXJ0001 — `fix-folgeseiten-uebertrag-problem` (Verbesserungs-Typ, aktuell v1.2.0)
+## DXJ0001 — `fix-folgeseiten-uebertrag-problem` (Verbesserungs-Typ, aktuell v1.7.0)
 
 | ID | Kurzbeschreibung | Sicherheitsstufe |
 |----|----|----|
 | `DXJ0001.A` | Edge-Case Übertrag-Problem: fehlende Summe/Übertrag auf Seiten abgefangen, auf denen der Detailbereich noch nicht begonnen hat (langer Kopftext/Titelübersicht) | Vorschlag mit Rückfrage |
 | `DXJ0001.B` | Folgeseitenproblem: fehlende Titelzeile auf Folgeseite behoben (sabotierende `BeforePrint`-Logik entfernt) | Automatisch sicher* |
-| `DXJ0001.C` | Skript aufgeräumt (leere Handler, toter Code, work4all-interne Parameter, wirkungslose Bänder, Debug-Ausgaben, gekürzte Kommentare) | Automatisch sicher, PFLICHT* |
+| `DXJ0001.C` | Skript aufgeräumt (leere Handler, toter Code, work4all-interne Parameter, wirkungslose Bänder, Debug-Ausgaben). Kommentar-Kürzung nur in der Live-Datei und nur als eigener, angeforderter Schritt — die Referenz behält ihre Kommentare | Automatisch sicher, PFLICHT* |
 | `DXJ0001.D` | Log-Eintrag im Script wird ergänzt (`work4all-log`-Mechanismus selbst, kein Fix-Muster) | — (Infrastruktur) |
-| `DXJ0001.E` | Abstand-vor-Rabatt-Problem behoben (`AllowMarkupText`-Leerzeile + Folge-Padding) | Vorschlag mit Rückfrage |
+| `DXJ0001.E` | Abstand-vor-Rabatt-Problem behoben (`AllowMarkupText`-Leerzeile + Folge-Padding). Beide Teile nur gemeinsam anwenden; Padding-Reihenfolge ist `Left,Right,Top,Bottom` (Top = Position 3) | Vorschlag mit Rückfrage |
 | `DXJ0001.F` | Übertrag-Problem: Sektionen werden auf Seite 1 nicht mehr fälschlich mit reserviertem Platz angezeigt | Vorschlag mit Rückfrage* |
 | `DXJ0001.G` | Mindesthöhen statt `KeepTogether` gegen Weißraum/abgeschnittene Übertrag-Anzeige (ersetzt `DXJ0001`-Alt-Muster b) | Automatisch sicher* |
 | `DXJ0001.H` | Batch-Sicherheits-Reset bei Sammeldruck mehrerer Belege in einem Lauf | Vorschlag mit Rückfrage* |
+
+**Prüfwerkzeug:** Alle Fixes dieses Skills werden mit `fix-folgeseiten-uebertrag-problem/scripts/validate_repx.py` abgesichert (Checks `C01`–`C19`, Exit-Code 1 bei FAIL) — verbindlich nach jeder Bearbeitungsrunde und zusätzlich als Selbst-Audit auf der verwendeten Referenzdatei.
+
+**Konsistenz:** Diese Tabelle ist eine Kopie zur schnellen Übersicht. Dass sie nicht von der Quelle abweicht, prüfen die Checks `S11` (Unterpunkt-IDs) und `S12` (Versionsangabe) in `../neuen-devexpress-report-skill-anlegen/scripts/lint_skills.py` — genau diese Tabelle war schon zweimal veraltet.
 
 `*` = abhängig von Bedingungen (z. B. bestätigte Referenzdatei) automatisch sicher, siehe Detaileinstufung im jeweiligen `fix-catalog.md`-Eintrag.
 

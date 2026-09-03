@@ -1,0 +1,15 @@
+{
+  "skills": [
+    "fix-folgeseiten-uebertrag-problem"
+  ],
+  "query": "Das Uebertrag-Band reserviert auf Seite 1 Platz, obwohl es dort unterdrueckt wird. Bitte beheben.",
+  "files": [
+    "<repx-datei-aus-M001>"
+  ],
+  "expected_behavior": [
+    "Wendet Muster (i) vollstaendig an: Bandaufteilung, bandeigenes BeforePrint, Design-Mindesthoehen, Laufzeit-Wiederherstellung",
+    "Verwendet als Bedingung pageCounter und NICHT _detailPrintedSoFar (in BeforePrint immer false)",
+    "Setzt Hoehen in BeforePrint, nicht in PrintOnPage",
+    "validate_repx.py meldet weder C11 noch C12"
+  ]
+}

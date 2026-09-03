@@ -1,8 +1,9 @@
 ---
 name: neuen-devexpress-report-skill-anlegen
 description: Legt einen neuen work4all-DevExpress-Report-Skill (Verbesserungs-Typ wie "fix-folgeseiten-uebertrag-problem" oder Neuerstellungs-Typ wie "neuen-devexpress-listenreport-bauen") strukturiert an und liefert ihn sowohl an das Cowork-Plugin als auch an das lokale GitHub-Repo C:\GitHub\work4all-claude-skills aus. Unbedingt verwenden, wenn der Nutzer einen neuen DevExpress-Skill anlegen, erweitern oder strukturieren möchte — auch bei kurzen Trigger-Sätzen wie "create new dx skill", "neuen DX Skill erstellen", "neuen Skill anlegen", "DX Skill Bauplan", "mach daraus einen skill" (im DevExpress/Report-Kontext), oder wenn der Nutzer nach Skill-ID, Versionierung, Fix-Log oder einer einheitlichen Struktur für Report-Skills fragt.
-skill_id: DXJ0003
-version: 0.4.0
+metadata:
+  skill_id: DXJ0003
+  version: 0.7.0
 ---
 
 # Neuen DevExpress-Report-Skill anlegen
@@ -80,6 +81,11 @@ Output ist immer eine neue `.repx`-Datei. Dateiname: `<Reportname>_<JJJJ-MM-TT>_
 
 - Ein "Änderungen dokumentiert"-Abschnitt bzw. eine `known-issues.md`, die neue Erkenntnisse, bekannte Grenzen und offene Punkte fortlaufend nummeriert festhält (für die spätere manuelle Code-Review durch den Nutzer).
 - Bei jeder inhaltlichen Skill-Überarbeitung: Versionshistorie im Kopf des Skills oder in einer eigenen `CHANGELOG`-Notiz kurz vermerken (Version, Datum, was geändert wurde).
+- **Zwei-Wege-Kommentarregel (seit v0.5.1).** Kommentare im eingebetteten Skript haben in Referenz- und Live-Datei unterschiedliche Aufgaben und werden deshalb unterschiedlich behandelt:
+  - **Referenzdatei:** Kommentare bleiben **vollständig** erhalten. Sie sind dort die eigentliche Dokumentation — sie erklären, warum eine Stelle so aussieht, und genau das braucht der nächste Lauf beim Strukturvergleich.
+  - **Live-/Produktivdatei:** Kommentare **dürfen** gekürzt werden, aber nur als **eigener, ausdrücklich angeforderter Arbeitsschritt** — nie beiläufig innerhalb eines Fix-Laufs, und nie im selben Schritt wie eine inhaltliche Änderung (sonst ist im Diff nicht mehr trennbar, was Kürzung und was Fix war).
+  - **Unantastbar in beiden Fällen:** der `work4all-log`-Block und die Anker-Zeile (`fix-log-format.md` Regeln 3 und 8).
+  - **Konsequenz für den Referenz-Diff:** Sobald eine Live-Datei gekürzte Kommentare hat, wird der Vergleich gegen die Referenz **kommentar-unempfindlich** geführt (Kommentare vor dem Diff entfernen), sonst erzeugt die Kürzung Hunderte Scheinunterschiede und verdeckt echte Abweichungen.
 
 ### 7. Skill-ID & Fix-Log
 
@@ -117,12 +123,36 @@ Grund für diesen Baustein: Diese IDs sind die Grundlage für ein skillübergrei
 
 **Dritter Skill-Typ ab hier:** Neben Verbesserungs- und Neuerstellungs-Typ gibt es seit `DXJ0004` einen **Dokumentations-Typ** (Beispiel: `skill-inhaltsverzeichnis`) — kein Report-Fix-Skill im eigentlichen Sinn, sondern ein Skill, der bestehendes Skill-Wissen (hier: alle Unterpunkt-IDs) für den Nutzer aufbereitet. Pflichtbausteine 1, 6, 7 und 8 gelten auch für diesen Typ; Bausteine 2 (Schritte), 3 (Sicherheitsstufen), 5 (Output-Konvention: `.repx`) und 9/10 (repx-spezifisch) sind für ihn nicht einschlägig, da er keine `.repx`-Dateien liest oder verändert.
 
+### 12. Spec-Konformität (offizielle Agent-Skills-Vorgaben)
+
+Jeder Skill dieses Plugins hält die offiziellen Vorgaben ein. Sie sind nicht kosmetisch: Verstöße gegen die ersten vier führen dazu, dass ein Upload abgelehnt wird oder der Skill gar nicht erst gefunden wird.
+
+| Regel | Vorgabe |
+|----|----|
+| Frontmatter-Keys | Nur `name`, `description`, `license`, `compatibility`, `metadata`, `allowed-tools`. **Eigene Felder wie `skill_id` und `version` gehören unter `metadata:`** — als Top-Level-Key werden sie beim claude.ai-Upload und beim Packaging als „unexpected key" abgelehnt. |
+| `name` | Kleinbuchstaben/Ziffern/Bindestriche, max. 64 Zeichen, ohne „claude"/„anthropic". |
+| `description` | Max. 1.024 Zeichen, dritte Person, nennt **was** der Skill tut **und wann** er greift; wichtigster Anwendungsfall zuerst. |
+| SKILL.md-Umfang | Max. 500 Zeilen — und darüber hinaus knapp halten: die Datei wird bei **jedem** Trigger vollständig geladen. Details gehören in `references/`, die nur bei Bedarf gelesen werden. |
+| Referenz-Tiefe | Verweise aus `SKILL.md` gehen **eine Ebene tief**; skillübergreifende Verweise mit vollständigem relativem Pfad (`../<anderer-skill>/references/...`), sonst zeigt der Pfad ins Leere. |
+| Referenzdateien >100 Zeilen | Bekommen ein `## Inhalt`-Verzeichnis, damit beim Anlesen der volle Umfang sichtbar ist. |
+| Skript-Aufrufe | Immer mit `${CLAUDE_SKILL_DIR}` dokumentieren — ein relativer Pfad bricht, sobald das Arbeitsverzeichnis ein anderes ist. |
+| Pfadtrenner | Nur Forward-Slashes in skill-internen Pfaden. |
+| Evaluations | Mindestens drei Szenarien je Verbesserungs-Skill, abgeleitet aus real aufgetretenen Fehlerfällen, in `evals/`. |
+| Eine Quelle je Information | Dieselbe Aussage steht an **einer** Stelle. Wo eine Kopie unvermeidbar ist (z. B. das Inhaltsverzeichnis in `DXJ0004`), wird sie maschinell gegen die Quelle geprüft. Prosa-Zusammenfassungen, die einen Katalog oder eine Tabelle nacherzählen, werden nicht angelegt — sie laufen erfahrungsgemäß auseinander und widersprechen dann der verbindlichen Stelle. |
+| SKILL.md-Umfang | Die Datei darf so ausführlich sein, wie der Ablauf es braucht: **Qualität geht vor Token-Zahl.** Gemeldet wird nur unkontrolliertes Wachstum, nicht jede Überschreitung eines Richtwerts. |
+
+**Automatisierte Prüfung:** `python3 "${CLAUDE_SKILL_DIR}/scripts/lint_skills.py"` prüft alle Skills des Plugins gegen diese Regeln (`S01`–`S12`, Exit-Code 1 bei FAIL) — darunter `S11` (Unterpunkt-IDs stimmen über alle Dateien überein) und `S12` (Versionsangaben stimmen über Frontmatter, Registry und Inhaltsverzeichnis überein). Vor jedem Ausliefern eines geänderten Skills laufen lassen — analog zu `validate_repx.py` bei Report-Dateien.
+
 ## Versionierung dieses Meta-Skills
 
 - v0.1.0 — Erstfassung: Bauplan mit den 8 Pflichtbausteinen, Übersicht-zuerst-Regel, Skill-ID-Format `DX<Kürzel><4-stellig>`.
 - v0.2.0 — Zwei fehlende, wiederkehrend benötigte Bausteine ergänzt, damit künftige Korrektur-Skills keine bereits gelösten Probleme erneut lösen oder Regeln vergessen: Baustein 9 (Backup-Pflicht vor jeder Änderung, bisher nur Projekt-Instruction, jetzt Skill-Pflichtbaustein) und Baustein 10 (gemeinsame, themenneutrale `.repx`-Technik-Basis in `references/repx-format-basics.md`, damit Encoding-/Escaping-/Bandmodell-Wissen nicht pro Skill dupliziert wird). Baustein 4 (Validierung) verweist jetzt auf eine neue generische Basis-Checkliste (`references/validation-generic.md`), die jeder Fach-Skill um eigene Punkte ergänzt statt sie neu zu schreiben.
 - v0.2.1 — Fehlerkorrektur in `repx-format-basics.md`, Bearbeitungs-Pipeline Schritt 4.3: Zeilenenden werden jetzt explizit auf reines `\n` normalisiert, BEVOR `\n` → `&#xD;&#xA;` kodiert wird — sonst blieb bei jedem Zeilenumbruch im gesamten Skript ein rohes `\r` stehen (sichtbar als Leerzeile nach jeder Zeile, siehe `fix-folgeseiten-uebertrag-problem/references/known-issues.md` Eintrag 13). Neuer Pflicht-Validierungspunkt 12 in `references/validation-generic.md` ergänzt. Stale Verweise auf `work4all-skill-log` auf den aktuellen Blocknamen `work4all-log` korrigiert.
 - v0.3.0 — Neuer Baustein 11 (Unterpunkt-IDs für Verbesserungs-Typ-Skills, `references/unterpunkt-ids.md`): jedes eigenständige Fix-Muster bekommt eine ID (`<Skill-ID>.<Buchstabe>`), wird dem Nutzer vor Anwendung zur gezielten Abwahl gezeigt, Abwahl wird im `work4all-log` vermerkt. Dazu `fix-log-format.md` auf `(v3)` erweitert (neues Feld `<Übersprungen>`, rückwärtskompatibel zu v1/v2). Dritter Skill-Typ „Dokumentations-Typ" eingeführt (Beispiel: `skill-inhaltsverzeichnis`, `DXJ0004`) — nutzt Skill-IDs und Unterpunkt-IDs, aber keine `.repx`-spezifischen Bausteine.
+- v0.7.0 — Baustein 12 um zwei Regeln erweitert, die aus einem Selbst-Check hervorgingen: **„Eine Quelle je Information"** (unvermeidbare Kopien werden maschinell gegen die Quelle geprüft, Prosa-Nacherzählungen von Katalogen werden nicht angelegt) und die ausdrückliche Klarstellung, dass **Qualität vor Token-Zahl** geht — der Umfangs-Check meldet nur noch unkontrolliertes Wachstum. Neue Checks `S11` (Unterpunkt-ID-Konsistenz) und `S12` (Versionskonsistenz) in `scripts/lint_skills.py`. Anlass: In `DXJ0001` beschrieb eine Prosa-Zusammenfassung die Skript-Hygiene noch als optional, während der Ablauf derselben Datei sie als Pflicht führte, und die Versionsangabe im Inhaltsverzeichnis war zum zweiten Mal veraltet — beides fand der Linter, nicht ein Mensch.
+- v0.6.0 — Neuer Baustein 12 (Spec-Konformität) plus `scripts/lint_skills.py` (`S01`–`S10`): die offiziellen Agent-Skills-Vorgaben sind jetzt Teil des Bauplans und maschinell prüfbar. Anlass war ein Abgleich mit der offiziellen Dokumentation, der zwei harte Verstöße im Bestand fand: `skill_id`/`version` standen als Top-Level-Frontmatter-Keys (beim claude.ai-Upload als „unexpected key" abgelehnt — jetzt unter `metadata:`), und mehrere `SKILL.md` verwiesen auf `references/fix-log-format.md` bzw. `references/unterpunkt-ids.md`, die in **diesem** Skill liegen, nicht im verweisenden — die Pfade zeigten ins Leere und sind jetzt vollständig relativ. Dazu: Inhaltsverzeichnisse in allen Referenzdateien >100 Zeilen, Skript-Aufrufe über `${CLAUDE_SKILL_DIR}`, und die Versionshistorie von DXJ0001 aus der `SKILL.md` in `../fix-folgeseiten-uebertrag-problem/references/skill-changelog.md` ausgelagert (Progressive Disclosure, rund 1.800 Tokens weniger pro Trigger).
+- v0.5.1 — Baustein 6 (Dokumentation) um die Zwei-Wege-Kommentarregel ergänzt: die Referenzdatei behält ihre vollständigen Begründungs-Kommentare, die produktive Live-Datei darf gekürzte Kommentare haben; die Kürzung ist ein eigener, ausdrücklich angeforderter Arbeitsschritt und nie Teil eines Fix-Laufs. Konsequenz für den Referenz-Diff: kommentar-unempfindlich vergleichen. Stale Verweise (`C01`–`C16`, „vier Fehlerklassen") korrigiert.
+- v0.5.0 — Baustein 4 (Validierung) um einen **ausführbaren Check-Index** erweitert: `validation-generic.md` bekommt die generischen Pflichtpunkte 13–16 (lückenlose `ItemN`-Nummerierung; dokumentweite Phasentrennung BeforePrint/PrintOnPage; layout-relevante Eigenschaften nur in BeforePrint; element-gescopte Prüfungen statt Zählungen) und verweist auf das lauffähige Skript `fix-folgeseiten-uebertrag-problem/scripts/validate_repx.py` (Checks `C01`–`C18`), das nach jeder Bearbeitungsrunde und zusätzlich als Selbst-Audit auf der Referenzdatei zu laufen hat. `repx-format-basics.md` um zwei Abschnitte ergänzt (`ItemN`-Mechanik, dokumentweite Phasentrennung). Anlass: Sitzung 03./04.09.2026 am Report `dxAio_template`, in der fünf Fehlerklassen nacheinander erst durch den Kunden im Designer/Testdruck gefunden wurden, obwohl alle bis dahin bestehenden Checks grün waren — Details in `fix-folgeseiten-uebertrag-problem/references/known-issues.md` Einträge 22–28.
 - v0.4.0 — `references/fix-log-format.md` um neuen Abschnitt „Überlebensfähigkeit bei einem Designer-Speichervorgang" ergänzt: bestätigter Befund (Report `dxArticleList`, 03.09.2026), dass ein rein aus Kommentaren bestehender `work4all-log`-Block beim Speichern aus dem DevExpress Report Designer restlos aus der Datei verschwindet (`ScriptsSource`/`ScriptLanguage`-Attribute werden entfernt, nicht nur geleert). Neue, noch unverifizierte Mitigation: eine harmlose Anker-Zeile (`private static readonly string _work4allLogAnchor = ...`) direkt nach der Log-Fußzeile, damit der kompilierte Skript-Code nicht leer ist. Neue Regel 8 (Anker-Zeile bei fehlender Anker-Zeile in Altdateien nachrüsten), Regeln 3–5 entsprechend ergänzt. Betroffene Skills `fix-folgeseiten-uebertrag-problem` (DXJ0001) und `neuen-devexpress-listenreport-bauen` (DXJ0002) im selben Zug aktualisiert.
 
 ## Referenzdateien im Überblick
@@ -133,3 +163,4 @@ Grund für diesen Baustein: Diese IDs sind die Grundlage für ein skillübergrei
 - `references/repx-format-basics.md` — themenneutrale `.repx`-Technik-Basis (Encoding, Escaping/Splice-Pipeline, Bandmodell, `Localization`-Block, bekannte generische Fallen). Pflichtlektüre vor jeder direkten Skript-/XML-Bearbeitung (Baustein 10).
 - `references/validation-generic.md` — generische Validierungs-Mindestcheckliste für jede `.repx`-Bearbeitung (Baustein 4).
 - `references/unterpunkt-ids.md` — Format, Vergabe- und Stabilitätsregeln für Unterpunkt-IDs (Baustein 11).
+- `scripts/lint_skills.py` — prüft alle Skills des Plugins gegen die offiziellen Spec-Vorgaben (Baustein 12).

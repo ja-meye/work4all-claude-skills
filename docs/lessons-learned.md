@@ -31,3 +31,52 @@ Das ist eine schärfere Ausprägung eines bereits bekannten, allgemeineren Phän
 Beide Werte fielen bei einer reinen XML-Wohlgeformtheits-/Ref-Auflösungs-Prüfung (wie sie `validation-generic.md`/`validierung-vor-auslieferung.md` vorschreiben) nicht auf — die Datei war strukturell vollständig valide, lud aber trotzdem nicht.
 
 **Konsequenz:** Bei jedem neu gebauten oder reparierten Report zusätzlich zur strukturellen Validierung einen gezielten Attribut-Abgleich gegen eine bekannt funktionierende Referenzdatei desselben Reporttyps durchführen (Root-Attribute komplett gegenüberstellen: Werte, die in der Referenz vorkommen, aber in der neuen Datei fehlen oder abweichen). Dieser Abgleich ist kein Ersatz für den echten Designer-Testdruck, aber ein günstiger Zwischenschritt, der genau diese Art von "syntaktisch gültig, aber inkonsistent" Fehlern zuverlässig aufdeckt, bevor der Nutzer sie im Designer erlebt.
+
+## Sitzung 03./04.09.2026 — vier Fehlerklassen, die alle bestehenden Checks passiert haben
+
+Beim Fix des Reports `dxAio_template` (Übertrag-/Folgeseiten-Logik) sind vier Fehler nacheinander erst dadurch aufgefallen, dass der Nutzer sie im Enduser-Designer bzw. im Testdruck gesehen hat. Alle vier haben die bis dahin bestehende Validierungs-Checkliste vollständig grün passiert. Das ist die eigentliche Lehre: Die Checks prüften **Wohlgeformtheit und Werte**, aber nicht, ob die Werte auch **wirksam** sind.
+
+1. **Lücken in der `ItemN`-Nummerierung.** Nach dem Entfernen von Elementen war die Nummerierung dreier Sammlungen nicht mehr lückenlos. DevExpress ignoriert alles hinter der ersten Lücke stillschweigend — der neu gesetzte Höhen-Eintrag eines Bands kam deshalb nie an, obwohl er wertgleich zur Referenz in der Datei stand.
+2. **Phasentrennung übersehen.** Ein in `PrintOnPage` gesetztes Flag wurde in `BeforePrint`-Handlern gelesen. Die PrintOnPage-Phase läuft dokumentweit erst nach allen BeforePrint-Ereignissen — das Flag ist dort immer `false`, die betroffenen Controls blieben auf allen Seiten minimal.
+3. **Halb angewendetes Muster.** Von einem zweiteiligen Fix wurde nur der Kompensations-Teil angewendet, weil eine **Zählung** von Attribut-Vorkommen (statt einer element-gescopten Prüfung) fälschlich nahelegte, der erste Teil sei schon vorhanden. Ergebnis: das Symptom wurde verstärkt statt behoben.
+4. **Referenzdatei ungeprüft als Vorlage genommen.** Die als Referenz benannte Datei war eine Diagnose-Zwischenfassung („DEBUG", „v31", trotz „FINAL" im Namen) mit Debug-Code und einem echten Logikfehler. Daraus wurde Code 1:1 übernommen — samt Fehler.
+
+**Konsequenzen (umgesetzt in Plugin-Version 1.6.0):**
+
+- Neuer, ausführbarer Check-Index `scripts/validate_repx.py` mit den Checks `C01`–`C18` (inzwischen 18 Checks), verbindlich nach **jeder** Bearbeitungsrunde statt nur am Ende. Er meldet alle vier Fehlerklassen oben automatisch; die Gegenprobe an den Zwischenständen dieser Sitzung hat das bestätigt.
+- Das Skript ist zusätzlich verbindlich **auf der Referenzdatei selbst** auszuführen (Selbst-Audit). Für die hier verwendete Referenz meldet es sofort Debug-Reste und den Logikfehler.
+- Generische Regeln in `validation-generic.md` (Punkte 13–16) und `repx-format-basics.md` (Abschnitte zu `ItemN` und zur dokumentweiten Phasentrennung) ergänzt, damit sie nicht an einen einzelnen Fach-Skill gebunden sind.
+- Arbeitsregel: Fehlalarme eines Checks werden durch **Nachschärfen des Checks** behoben, nicht durch Ignorieren des Befunds — der Check-Index wächst dadurch mit jedem Lauf.
+- Arbeitsregel: Prüfungen sind immer auf das konkrete Element zu scopen; Zählungen über die ganze Datei sind kein Nachweis.
+
+### Nachtrag: eine fünfte Fehlerklasse — Doku statt Datei geglaubt
+
+`Padding` wird als `Left,Right,Top,Bottom,Dpi` serialisiert. Ein im Changelog einer Referenzdatei als
+„Padding (Top) 0 → 10" beschriebener Fix hatte in Wahrheit den **Right**-Wert gesetzt (Position 2) und war
+vertikal wirkungslos; übernommen wurde er trotzdem, weil die Beschreibung plausibel klang. Aufgefallen ist es
+erst, als der Nutzer meldete, der Abstand sei weiterhin zu gering.
+
+Die Lehre ist dieselbe wie bei Punkt 3 oben, nur in einer anderen Verkleidung: **eine Aussage über eine Datei
+wird an der Datei verifiziert, nicht aus einem Text übernommen** — auch dann nicht, wenn der Text aus dem
+eigenen Projekt stammt. In diesem Fall stand der Beweis in der Datei selbst: 19 Zellen mit expliziten
+`Padding.LeftF`/`Padding.RightF`-Bindungen belegen die Reihenfolge eindeutig. Check `C17` leitet sie seitdem
+bei jedem Lauf automatisch ab.
+
+## Abgleich mit der offiziellen Agent-Skills-Spezifikation (04.09.2026)
+
+Ein Abgleich der eigenen Skills mit der offiziellen Dokumentation hat zwei **harte** Verstöße gefunden, die im Alltag
+nicht aufgefallen wären, weil sie erst beim Upload bzw. beim Folgen eines Pfades zuschlagen:
+
+1. **`skill_id` und `version` standen als Top-Level-Frontmatter-Keys.** Erlaubt sind für claude.ai-Uploads, die
+   Skills-API und `package_skill.py` nur `name`, `description`, `license`, `compatibility`, `metadata`,
+   `allowed-tools`; alles andere wird als „unexpected key" abgelehnt. Eigene Felder gehören unter `metadata:`.
+2. **Skillübergreifende Verweise zeigten ins Leere.** Mehrere `SKILL.md` verwiesen auf `references/fix-log-format.md`
+   — diese Datei liegt aber im Meta-Skill, nicht im verweisenden Skill. Jetzt mit vollständigem relativem Pfad.
+
+Dazu kamen dokumentierte Best Practices: Inhaltsverzeichnis für Referenzdateien >100 Zeilen, Skript-Aufrufe über
+`${CLAUDE_SKILL_DIR}` statt relativer Pfade, SKILL.md schlank halten (sie lädt bei **jedem** Trigger — die
+ausgelagerte Versionshistorie spart rund 1.800 Tokens pro Auslösung), und Evaluations-Szenarien als Regressionsschutz.
+
+**Konsequenz:** Die Regeln stehen jetzt als Baustein 12 im Meta-Skill und werden von `scripts/lint_skills.py`
+(`S01`–`S10`) maschinell geprüft — dieselbe Mechanik wie `validate_repx.py` für Report-Dateien. Der Linter hat den
+zweiten Verstoß oben selbst gefunden, nicht ein Mensch.

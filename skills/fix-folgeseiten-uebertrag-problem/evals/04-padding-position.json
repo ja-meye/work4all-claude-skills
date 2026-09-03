@@ -1,0 +1,15 @@
+{
+  "skills": [
+    "fix-folgeseiten-uebertrag-problem"
+  ],
+  "query": "Der Abstand ueber der Rabatt-Zeile ist zu gering, bitte Padding oben erhoehen.",
+  "files": [
+    "<repx-datei-aus-M001>"
+  ],
+  "expected_behavior": [
+    "Leitet die Padding-Reihenfolge aus Padding.LeftF/RightF-Bindungen der Datei ab (Left,Right,Top,Bottom,Dpi)",
+    "Aendert Position 3 (Top), nicht Position 2 (Right)",
+    "Prueft, ob Muster (h) Teil 1 (AllowMarkupText) ueberhaupt schon angewendet ist, element-gescopet statt per Zaehlung",
+    "C18 weist die Aenderung als 'Top' aus"
+  ]
+}

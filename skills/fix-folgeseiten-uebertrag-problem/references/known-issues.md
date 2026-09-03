@@ -6,6 +6,37 @@ Format pro Eintrag: **Was passiert ist → Was man daraus lernt → Wie man es k
 
 ---
 
+## Inhalt
+
+- 1. `sumCarryoverSum()` benötigt zwingend das `<Summary Running="Group">`-Element (entgegen der Doku-Erwartung)
+- 2. Gesamtsummen-Rückfallbedingung zeigt Übertrag an, bevor der Detailbereich überhaupt begonnen hat
+- 3. Ein manueller Speichervorgang aus dem Visual-Studio-Designer kann per XML-Bearbeitung gesetzte Eigenschaften wieder verwerfen
+- 4. Freies Splitten langer Multiline-Texte über einen Seitenumbruch: Risiko von Rendering-Fehlern (Glyphen zerschnitten)
+- 5. Ein direkter Diff gegen die Referenz ersetzt NICHT die XML/Skript-Paritätsprüfung — auch bei sonst strukturell fast identischen Dateien
+- 6. DevExpress speichert manche im Designer gesetzten Werte NICHT als direktes XML-Attribut, sondern in einem separaten `<Localization>`-Block
+- 7. Ein Visual-Studio-Speichervorgang kann rein kosmetische Einträge in der `<Localization>`-Sektion umsortieren, ohne dass sich Inhalt oder Verhalten ändert
+- 8. Ein reiner Skript-Diff übersieht Muster (g) komplett — Fix-Lauf war unvollständig, obwohl der Skript-Teil korrekt war
+- 9. Verlust des UTF-8-BOM bei einem reinen XML-Bearbeitungsschritt (kein Skript-Reencoding)
+- 10. Falsch-Positiv bei der Scripts-Paritätsprüfung durch ungescopte Regex
+- 11. Zeitstempel im Dateinamen war falsch, weil die Session-Umgebung in UTC läuft, nicht in der Zeitzone des Kunden
+- 12. Skill kennt bisher nur referenznahe Reports — stärker abweichende, ältere Varianten sind ein bekannter blinder Fleck
+- 13. Fehlende `\r`-Normalisierung vor dem finalen Escaping erzeugt eine Leerzeile nach JEDER Skriptzeile
+- 14. `AllowMarkupText="true"` + custom `LineSpacing` auf einer wachsenden (`CanGrow`) mehrzeiligen `XRTableCell` erzeugt eine zusätzliche Leerzeile — CONFIRMED (31.08., vom Kunden testgedruckt und bestätigt)
+- 15. Folgefund: Nach Behebung von Eintrag 14 sitzt die nächste `SubBand`-Zeile (Rabatt/Rabatt2/Liefertermin/Zolltarifnummer) zu eng am vorherigen Text
+- 16. `CanGrow="true"` erlaubt nur Wachsen über die zugewiesene Höhe, niemals Schrumpfen darunter
+- 17. `e.PageIndex` ist in `BeforePrint` unzuverlässig — nur in `PrintOnPage` verlässlich verfügbar
+- 18. DevExpress erzwingt einen Mindestwert von 5 für `HeightF`/`H` — ein programmatisch gesetzter kleinerer Wert wird beim Lesen stillschweigend angehoben
+- 19. Ein bandeigenes `BeforePrint` darf sich nicht auf eine erst in `PrintOnPage` gesetzte Variable stützen
+- 20. Verschachtelte Controls behalten ihre eigene, unabhängig von der Elterntabelle persistierte Höhe
+- 21. Ein `work4all-log`-Block aus reinen Kommentaren wird beim Designer-Speichern restlos entfernt — nicht nur geleert
+- 22. Eine Lücke in der `ItemN`-Nummerierung einer Sammlung macht alle nachfolgenden Einträge wirkungslos — ohne jede Fehlermeldung
+- 23. `_detailPrintedSoFar` (und jedes andere in `PrintOnPage` gesetzte Flag) ist in **jedem** `BeforePrint` immer `false` — auch auf Control-Ebene, nicht nur auf Band-Ebene
+- 24. Höhen, die nur in `PrintOnPage` gesetzt werden, sind wirkungslos — Mindesthöhen im Design und Laufzeit-Wiederherstellung gehören zwingend zusammen
+- 25. Ein Muster nur zur Hälfte anwenden kann schlimmer sein als es gar nicht anzuwenden — und eine Zähl-Prüfung ist kein Nachweis
+- 26. Nicht jeder auffällige Design-Wert ist ein Bug: `Visible="false"` an einem Band kann durch ein ExpressionBinding zur Laufzeit gesetzt werden
+- 27. Die Referenzdatei ist nicht automatisch korrekt — eine Diagnose-Zwischenfassung kann eigene Fehler enthalten
+- 28. `Padding` wird als `Left,Right,Top,Bottom,Dpi` serialisiert — ein als „Top" dokumentierter Fix saß auf der falschen Position
+
 ## 1. `sumCarryoverSum()` benötigt zwingend das `<Summary Running="Group">`-Element (entgegen der Doku-Erwartung)
 
 **Was passiert ist:** Beim ersten Fix-Durchlauf wurden vier `<Summary Ref="..." Running="Group" />`-XML-Elemente entfernt, die auf `lblCarryHelperUnten`, `lbllblUebertragUnten`, `lblCarryHelperOben` und `lb_UebertragOben` lagen. Die Begründung damals: die neuere `sumCarryoverSum([POS_GesPreis])`-Expression auf denselben Controls sah wie ein vollständiger Ersatz aus, und die offizielle DevExpress-Dokumentation zu `sumCarryoverSum` legt nahe, dass die Expression allein für den Carryover-Mechanismus ausreicht.
@@ -240,3 +271,81 @@ Padding-Format ist `Left,Top,Right,Bottom,Dpi` — nur der zweite Wert (Top) wir
 **Was man daraus lernt:** Der Designer kompiliert `ScriptsSource` offenbar beim Laden/Speichern; ein reiner Kommentarblock kompiliert zu leerem Code, und ein leeres Kompilat wird beim Re-Serialisieren als "kein Skript vorhanden" behandelt — das Attribut wird dann ganz weggelassen statt leer geschrieben. Verwandt mit Eintrag 3 oben (Designer-Re-Serialisierung kann Properties verwerfen, die er nicht als "im Designer gesetzt" erkennt), aber diesmal betrifft es nicht eine einzelne Layout-Property, sondern den gesamten Audit-Log-Mechanismus, auf den sich `fix-log-format.md` Regel 1 ("Append-only") verlässt — der Log kann sich damit selbst durch ganz gewöhnliche Designer-Nutzung löschen, ohne dass irgendjemand das beabsichtigt oder bemerkt.
 
 **Wie man es künftig vermeidet:** Seit `fix-log-format.md` Regel 8 (03.09.2026) bekommt jeder `work4all-log`-Block direkt nach der Fußzeile eine harmlose Anker-Zeile (`private static readonly string _work4allLogAnchor = "keep-scriptssource-alive";`) — echter, wenn auch wirkungsloser Code, damit das Kompilat nie leer ist. `neuen-devexpress-listenreport-bauen` (ab v1.2.0) seedet sie beim Erstbau mit, `fix-folgeseiten-uebertrag-problem` (ab v1.3.0) rüstet sie bei älteren Dateien nach. **Noch offen:** Diese Mitigation ist bisher nicht durch einen echten Designer-Round-Trip verifiziert (kein DevExpress Designer in dieser Arbeitsumgebung verfügbar) — beim nächsten Report, der nach diesem Muster gebaut/gefixt und danach im Designer gespeichert wird, gezielt gegenprüfen (ScriptsSource inkl. Log-Block und Anker-Zeile nach dem Speichern noch vorhanden?) und dieses Ergebnis hier nachtragen.
+
+---
+
+## 22. Eine Lücke in der `ItemN`-Nummerierung einer Sammlung macht alle nachfolgenden Einträge wirkungslos — ohne jede Fehlermeldung
+
+**Wann aufgefallen:** 03./04.09.2026, Report `dxAio_template`, beim Fix nach Muster (i).
+
+**Was passiert ist:** Nach dem Entfernen mehrerer Elemente (Debug-Label samt seiner fünf `<Localization>`-Zeilen, Band `Sub_AbstandSeite1`) hatte die Datei in drei Sammlungen Lücken in der Nummerierung ihrer Kind-Elemente: `<SubBands>` begann bei `Item2`, die `<Controls>` eines Bands liefen `Item2, Item3, Item5`, und im großen `<LocalizationItems>`-Block (1532 Einträge) wurde der neu angelegte Höhen-Eintrag als `Item1538` ans Ende gehängt. Der Nutzer meldete daraufhin: das neue Band hat im Enduser-Designer **nicht** die gesetzte Höhe. Der Eintrag stand mit korrektem Wert in der Datei und war wertgleich zur Referenzdatei — er wurde nur nie gelesen.
+
+**Was man daraus lernt:** DevExpress löst die Kinder einer Sammlung offenbar über die Element-Namen `Item1, Item2, … ItemN` in lückenloser Folge auf. Alles hinter einer Lücke wird stillschweigend ignoriert. Die Datei bleibt dabei wohlgeformtes XML, alle klassischen Checks (Wohlgeformtheit, Ref-Eindeutigkeit, Klammern, Summary-Anzahl, Escaping) bleiben grün, und ein reiner **Werte**-Vergleich gegen eine Referenzdatei meldet „identisch". Sichtbar ist der Fehler ausschließlich an der Nummerierung selbst. Zum Gegencheck: Original und Referenz — beide vom Designer geschrieben — sind an **jeder** Stelle lückenlos ab `Item1`. `Ref="N"`-Nummern dürfen dagegen problemlos Lücken haben (auch in Original und Referenz vorhanden), das ist ein anderer Mechanismus.
+
+**Wie man es künftig vermeidet:** Nach **jedem** Entfernen oder Einfügen eines Sammlungs-Kindes die betroffene Sammlung lückenlos neu nummerieren (Öffnungs- **und** Schließ-Tag). Automatisiert: Check `C04` in `scripts/validate_repx.py`. Beim Neu-Nummerieren immer gegenprüfen, dass außer den Item-Nummern nichts verändert wurde (Normalisierungs-Vergleich), sonst verschiebt ein Regex-Fehler unbemerkt Inhalte.
+
+---
+
+## 23. `_detailPrintedSoFar` (und jedes andere in `PrintOnPage` gesetzte Flag) ist in **jedem** `BeforePrint` immer `false` — auch auf Control-Ebene, nicht nur auf Band-Ebene
+
+**Wann aufgefallen:** 03./04.09.2026, Report `dxAio_template`. Symptom: Übertrag oben erschien ab Seite 2 überhaupt nicht mehr.
+
+**Was passiert ist:** Aus der Referenzdatei wurden zwei Label-Handler übernommen, die die Höhe so setzen: `lbl.HeightF = _detailPrintedSoFar ? 40f : 1f;`. Das Flag wird ausschließlich in `tc_GPreis_PrintOnPage` gesetzt. Die PrintOnPage-Phase läuft aber für das **gesamte Dokument** erst, nachdem **alle** BeforePrint-Ereignisse durch sind — in BeforePrint ist das Flag deshalb immer `false`. Beide Labels blieben damit auf jeder Seite auf Höhe 1 (und der Text wurde zusätzlich auf jeder Seite geleert), der Übertrag war nirgends sichtbar.
+
+**Was man daraus lernt:** Eintrag 19 hielt das bereits für die **Band**-Ebene fest; die Einschränkung ist aber **phasenbedingt und gilt für jedes** BeforePrint, auch für einzelne Controls. In BeforePrint sind nur Größen verlässlich, die selbst ausschließlich aus BeforePrint-Ereignissen gespeist werden — in dieser Report-Familie praktisch nur `pageCounter` (hochgezählt im `PageFooter_BeforePrint`, das DevExpress vor dem Seiteninhalt auslöst, um die Fußzeilenhöhe zu reservieren; `pageCounter == 1` bedeutet damit zuverlässig „Seite 1"). Ein **Schreib**zugriff auf ein PrintOnPage-Flag in BeforePrint (z. B. der Batch-Sicherheits-Reset aus Muster (d)) ist dagegen unbedenklich — nur Lesezugriffe sind das Problem.
+
+**Wie man es künftig vermeidet:** Automatisiert: Check `C11` in `scripts/validate_repx.py` (meldet jeden Lesezugriff auf ein in PrintOnPage gesetztes Flag innerhalb eines BeforePrint-Handlers, Kommentare und Schreibzugriffe ausgenommen).
+
+---
+
+## 24. Höhen, die nur in `PrintOnPage` gesetzt werden, sind wirkungslos — Mindesthöhen im Design und Laufzeit-Wiederherstellung gehören zwingend zusammen
+
+**Wann aufgefallen:** 03./04.09.2026, Report `dxAio_template`, gleicher Lauf wie Eintrag 23.
+
+**Was passiert ist:** Erst wurden die Design-Höhen der betroffenen Bänder/Controls auf Mindestmaß gesetzt, die echten Höhen aber nur in `PrintOnPage` wiederhergestellt (`tbl.HeightF = show ? 60f : 1f;`). Zu dem Zeitpunkt ist die Layoutberechnung längst gelaufen — die Zuweisung hatte keine Wirkung. In einem früheren Zwischenstand war es umgekehrt: die Design-Höhen blieben auf ihren alten Werten, dafür sah der Bereich im Enduser-Designer unverändert hoch aus, obwohl der Diff „richtig" aussah.
+
+**Was man daraus lernt:** Die beiden Teile sind eine Einheit. Wer Design-Höhen auf Mindestmaß absenkt, **muss** die echten Höhen vor dem Layout wiederherstellen (`BeforePrint` am jeweiligen Element, Bedingung über `pageCounter`, siehe Eintrag 23) — und zwar sowohl an der Tabelle als auch an den darin verschachtelten Labels (Eintrag 20). `CanGrow` hilft dabei nicht: es wächst nur über die zugewiesene Höhe hinaus, es schrumpft nie darunter.
+
+**Wie man es künftig vermeidet:** Checks `C12` (keine `HeightF`-Zuweisung in einem PrintOnPage-Handler) und `C13` (abgesenkte Design-Höhen ohne jede Laufzeit-Zuweisung) in `scripts/validate_repx.py`.
+
+---
+
+## 25. Ein Muster nur zur Hälfte anwenden kann schlimmer sein als es gar nicht anzuwenden — und eine Zähl-Prüfung ist kein Nachweis
+
+**Wann aufgefallen:** 04.09.2026, Report `dxAio_template`, Muster (h) / `DXJ0001.E`.
+
+**Was passiert ist:** Bei der Diagnose wurde anhand eines Vergleichs der **Gesamtzahl** von `AllowMarkupText="true"` in Ziel- und Referenzdatei (7 vs. 6) geschlossen, Teil 1 des Musters (AllowMarkupText auf `tbl00` abschalten) sei in der Zieldatei bereits angewendet. Tatsächlich betraf der Zahlenunterschied eine **andere** Zelle in einem anderen Band; `tbl00` (Ref 228) stand weiterhin auf `true`. Angewendet wurde daraufhin nur Teil 2 — der Padding-Ausgleich (`Top 0 → 10`) auf den vier nachfolgenden Zellen. Dieser Ausgleich ist aber die Kompensation für die durch Teil 1 **wegfallende** Fehlhöhe: allein angewendet vergrößert er den Abstand zusätzlich. Der Nutzer meldete entsprechend „zu großer Abstand zum Rabatt, wenn die Bezeichnung viele Zeilen hat" — also genau das Symptom, das der Fix beheben sollte, nur verstärkt.
+
+**Was man daraus lernt:** Zwei Regeln. Erstens: Ein Muster mit mehreren Teilfixen, die sich gegenseitig kompensieren, wird **immer vollständig oder gar nicht** angewendet; jeder Teilfix wird vor der Anwendung einzeln am konkreten Element verifiziert, nicht am Gesamtbefund des Musters. Zweitens: Eine Zähl- oder Vorkommens-Prüfung (`count(...)`, `grep -c`) beweist nichts über ein **bestimmtes** Element — Prüfungen müssen immer auf das Element gescopet sein (`Ref="228"` + Attributname), so wie es `repx-technical-notes.md` bereits für die `<Scripts>`-Regex-Falle beschreibt.
+
+---
+
+## 26. Nicht jeder auffällige Design-Wert ist ein Bug: `Visible="false"` an einem Band kann durch ein ExpressionBinding zur Laufzeit gesetzt werden
+
+**Wann aufgefallen:** 03.09.2026, Report `dxAio_template`.
+
+**Was passiert ist:** `Sub_UebertragOben` trug im `<Localization>`-Block `Path="Visible" Data="false"`, und kein Skriptcode setzte den Wert zurück. Daraus wurde ein „kritischer Fund" konstruiert (das Band sei dauerhaft deaktiviert) und der Wert auf `true` geändert. Tatsächlich trägt das Band ein eigenes `ExpressionBinding` (`EventName="BeforePrint"`, `PropertyName="Visible"`, `Expression="Iif(?BzObjType != '8', True, False)"`), das den Design-Wert bei jedem Druck ohnehin überschreibt — deshalb steht er auch in der bestätigten Referenzdatei auf `false`. Die Änderung war unnötig und wurde zurückgenommen.
+
+**Was man daraus lernt:** Bevor ein Design-Wert als Fehler eingestuft wird, immer prüfen, ob dasselbe Element ein `ExpressionBinding` auf **dieselbe** Property trägt (`<ExpressionBindings>` direkt am Element, bei Bändern auch nach `</Controls>`). Sichtbarkeit, Text und Formatierung werden in dieser Report-Familie sehr häufig über Expressions gesetzt statt über den Design-Wert.
+
+---
+
+## 27. Die Referenzdatei ist nicht automatisch korrekt — eine Diagnose-Zwischenfassung kann eigene Fehler enthalten
+
+**Wann aufgefallen:** 03./04.09.2026, Referenzdatei `dxAio_template_DEBUG_HeightProbe_v31_…FINAL.repx`.
+
+**Was passiert ist:** Die als Referenz benannte Datei war der letzte Stand einer langen Diagnose-Reihe („v31", Dateiname mit „DEBUG"/„HeightProbe"). Sie enthielt elf `Diagnose-Test`-Kommentarblöcke, ein eigenes Debug-Label mit `_dbgHelper`-Feld, und in den beiden Label-Handlern den in Eintrag 23 beschriebenen Fehler. Aus ihr wurde Code 1:1 übernommen — samt Fehler. Erst der Testdruck des Kunden brachte es ans Licht.
+
+**Was man daraus lernt:** Die Pflicht-Referenz aus SKILL.md Schritt 2 ist ein **Strukturvergleich**, kein Freibrief zum Kopieren. Vor der Übernahme von Code aus einer Referenz gilt: (1) Ist die Datei eine bestätigte Freigabefassung oder eine Diagnose-Zwischenfassung? Dateinamen mit `DEBUG`, `PROBE`, `TEST`, `v<zweistellig>` sind ein Warnsignal, „FINAL" im Namen bedeutet nicht „freigegeben". (2) Läuft `scripts/validate_repx.py` **auf der Referenzdatei selbst** ohne FAIL durch? (Validierungs-Checkliste Punkt 11 fordert dieses Selbst-Audit bereits — hier hätte es die Debug-Reste und beide Handler-Fehler sofort gemeldet.) (3) Jede übernommene Codezeile wird gegen die dokumentierte Phasen-Mechanik geprüft, nicht nur gegen den optischen Vergleich im Designer.
+
+---
+
+## 28. `Padding` wird als `Left,Right,Top,Bottom,Dpi` serialisiert — ein als „Top" dokumentierter Fix saß auf der falschen Position
+
+**Wann aufgefallen:** 04.09.2026, Report `dxAio_template`. Der Nutzer meldete, der Abstand über der Rabatt-Zeile sei weiterhin zu gering, obwohl der dafür vorgesehene Fix angewendet war.
+
+**Was passiert ist:** Im Changelog der Referenzdatei v4 steht der Fix als „Padding (Top) von `0` auf `10` erhöht, `10,0,0,0,254` → `10,10,0,0,254`". Verändert wurde damit aber die **zweite** Position — und die trägt den **Right**-Wert, nicht den Top-Wert. Der Fix war vertikal wirkungslos. Er wurde in dieser Sitzung anhand des Changelogs auf die Zieldatei übernommen und war dort ebenso wirkungslos; das Top-Padding der vier Zellen stand weiterhin auf `0`.
+
+**Was man daraus lernt:** DevExpress serialisiert `PaddingInfo` als **`Left,Right,Top,Bottom,Dpi`** — `Top` ist Position **3**. Die Reihenfolge lässt sich in fast jeder work4all-Report-Datei direkt beweisen, statt sie einer Dokumentation zu glauben: viele Zellen tragen eine explizite `ExpressionBinding` auf `Padding.LeftF` bzw. `Padding.RightF`. Im konkreten Fall waren es 19 Zellen — ausnahmslos jede mit `Padding.LeftF = 10` hatte an Position 1 eine 10, jede mit `Padding.RightF = 10` an Position 2. Ein Changelog-Text ist kein Beleg; die Datei selbst ist einer.
+
+**Wie man es künftig vermeidet:** Check `C17` in `scripts/validate_repx.py` leitet die Reihenfolge bei jedem Lauf aus den vorhandenen `Padding.*F`-Bindungen der Datei ab und meldet jeden Widerspruch zwischen Bindung und statischem Attribut. Zusätzlich benennt Check `C18` jede Padding-Änderung gegenüber der Baseline im Klartext (z. B. `xrTableCell18: Right 0->10`) — damit fällt sofort auf, wenn eine Änderung auf einer anderen Position gelandet ist als beabsichtigt. Für den hier beschriebenen Fehler meldet er genau das. Vor jeder Padding-Änderung: Position aus dem Check-Ergebnis nehmen, nicht aus einer Beschreibung. Und generell — dies ist derselbe Fehlertyp wie Eintrag 25 (Zählung statt element-gescopter Prüfung): eine Aussage über eine Datei wird an der Datei verifiziert, nicht aus einem Text übernommen.

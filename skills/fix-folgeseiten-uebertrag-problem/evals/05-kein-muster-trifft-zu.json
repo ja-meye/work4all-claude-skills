@@ -1,0 +1,15 @@
+{
+  "skills": [
+    "fix-folgeseiten-uebertrag-problem"
+  ],
+  "query": "Bitte pruefe diesen bereits reparierten Report auf Uebertrag-/Folgeseiten-Probleme.",
+  "files": [
+    "<repx-datei-aus-M001>"
+  ],
+  "expected_behavior": [
+    "Fuehrt die Diagnose vollstaendig durch und konstruiert keinen Fix, wenn kein Muster zutrifft",
+    "Schreibt einen work4all-log-Eintrag mit Ergebnis 'keine Aenderung noetig'",
+    "Ruestet die Anker-Zeile _work4allLogAnchor nach, falls sie fehlt",
+    "Liefert einen kurzen Abschlussbericht statt gar nichts"
+  ]
+}

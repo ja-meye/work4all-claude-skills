@@ -21,10 +21,10 @@ Jeder Autor führt seinen eigenen Nummernkreis (Autoren-Kürzel + Nummer ist ein
 
 | Skill-ID  | Skill-Name                               | Typ            | Autor | Erstellt am | Version |
 |-----------|-------------------------------------------|----------------|-------|-------------|---------|
-| DXJ0001   | fix-folgeseiten-uebertrag-problem          | Verbesserung   | Jens  | 2026-08-28  | 1.3.0   |
-| DXJ0002   | neuen-devexpress-listenreport-bauen        | Neuerstellung  | Jens  | 2026-08-28  | 1.2.0   |
-| DXJ0003   | neuen-devexpress-report-skill-anlegen      | Meta-Skill     | Jens  | 2026-08-30  | 0.4.0   |
-| DXJ0004   | skill-inhaltsverzeichnis                   | Dokumentation  | Jens  | 2026-09-03  | 1.0.0   |
+| DXJ0001   | fix-folgeseiten-uebertrag-problem          | Verbesserung   | Jens  | 2026-08-28  | 1.7.0   |
+| DXJ0002   | neuen-devexpress-listenreport-bauen        | Neuerstellung  | Jens  | 2026-08-28  | 1.2.1   |
+| DXJ0003   | neuen-devexpress-report-skill-anlegen      | Meta-Skill     | Jens  | 2026-08-30  | 0.7.0   |
+| DXJ0004   | skill-inhaltsverzeichnis                   | Dokumentation  | Jens  | 2026-09-03  | 1.0.3   |
 
 Nächste freie Nummer für Jens: **DXJ0005**.
 

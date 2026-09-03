@@ -29,3 +29,25 @@ Diese Checks gelten für **jede** `.repx`-Bearbeitung, unabhängig vom fachliche
 ## Praktischer Hinweis
 
 Diese Checks lassen sich alle als kurze Python-Snippets direkt gegen die extrahierte `.cs`-Datei bzw. die rohe `.repx`-XML laufen lassen — schneller und zuverlässiger, als jede Änderung einzeln von Hand nachzuverfolgen. Es lohnt sich, ein kleines Validierungsskript zu bauen (Parsing, Ref-Zählung, Methodenabgleich, Klammernzählung, Summary-/Log-Block-Zählung) und es nach *jeder* Bearbeitungsrunde erneut laufen zu lassen, nicht nur einmal ganz am Ende.
+
+---
+
+## Ergänzungen vom 04.09.2026 (Sitzung `dxAio_template`)
+
+Diese vier Punkte gelten generisch für **jede** `.repx`-Bearbeitung, unabhängig vom Fach-Skill. Alle vier sind erst dadurch aufgefallen, dass der Kunde sie im Designer bzw. Testdruck gefunden hat — nicht durch die bis dahin bestehende Checkliste.
+
+13. **`ItemN`-Sammlungen lückenlos halten.** DevExpress löst die Kinder einer Sammlung über die Element-Namen `Item1..ItemN` in lückenloser Folge auf. Wird ein Element entfernt oder eingefügt, muss die betroffene Sammlung neu durchnummeriert werden (Öffnungs- **und** Schließ-Tag). Alles hinter einer Lücke wird stillschweigend ignoriert — die Datei bleibt dabei wohlgeformtes XML und alle übrigen Checks grün. `Ref="N"`-Nummern dürfen dagegen Lücken haben.
+14. **Phasentrennung BeforePrint / PrintOnPage respektieren.** Die PrintOnPage-Phase läuft für das gesamte Dokument erst, nachdem **alle** BeforePrint-Ereignisse durch sind. Eine Variable, die in einem PrintOnPage-Handler gesetzt wird, ist in **jedem** BeforePrint immer noch auf ihrem Initialwert — auch auf Control-Ebene, nicht nur auf Band-Ebene. In BeforePrint sind nur Größen verlässlich, die selbst ausschließlich aus BeforePrint-Ereignissen gespeist werden.
+15. **Layout-relevante Eigenschaften nur in BeforePrint setzen.** `HeightF`/`SizeF`/`CanGrow` in einem PrintOnPage-Handler zu setzen ist wirkungslos, weil die Layoutberechnung dort bereits abgeschlossen ist. Wer Design-Höhen absenkt, muss die echten Höhen in BeforePrint wiederherstellen — an der Tabelle **und** an den darin verschachtelten Controls.
+16b. **Serialisierungs-Reihenfolgen aus der Datei ableiten.** `Padding` ist `Left,Right,Top,Bottom,Dpi` (Top = Position 3). Solche Reihenfolgen nie aus einer Beschreibung übernehmen, sondern gegen vorhandene explizite Bindungen im Report selbst prüfen (`Padding.LeftF`/`Padding.RightF`) — Check `C17`.
+16. **Element-gescopte Prüfungen statt Zählungen.** Ob ein bestimmtes Attribut an einem bestimmten Element gesetzt ist, wird immer über `Ref`/Name gescopet geprüft. Eine Zählung über die ganze Datei (`count(...)`, `grep -c`) beweist nichts über ein einzelnes Element — ein Zahlenunterschied zur Referenz kann von einer völlig anderen Stelle stammen.
+
+## Ausführbarer Check-Index
+
+Der Verbesserungs-Skill `fix-folgeseiten-uebertrag-problem` liefert diese Checkliste als lauffähiges Skript mit: `skills/fix-folgeseiten-uebertrag-problem/scripts/validate_repx.py` (Checks `C01`–`C19`, Exit-Code 1 bei FAIL). Es ist bewusst report-neutral gehalten und kann von jedem Skill dieses Plugins verwendet werden:
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/../fix-folgeseiten-uebertrag-problem/scripts/validate_repx.py" <bearbeitet.repx> --baseline <original.repx>
+```
+
+**Verbindlich für jeden Skill, der eine `.repx` verändert:** nach *jeder* Bearbeitungsrunde laufen lassen (nicht nur am Ende) und zusätzlich einmal auf einer verwendeten Referenzdatei (Selbst-Audit — eine Diagnose-Zwischenfassung als Referenz fällt dabei sofort auf). Fehlalarme werden durch Nachschärfen des Checks behoben, nicht durch Ignorieren des Befunds.

@@ -1,0 +1,15 @@
+{
+  "skills": [
+    "fix-folgeseiten-uebertrag-problem"
+  ],
+  "query": "Entferne das Debug-Label lblDebug und das wirkungslose Band Sub_AbstandSeite1 aus dem Report.",
+  "files": [
+    "<repx-datei-aus-M001>"
+  ],
+  "expected_behavior": [
+    "Entfernt Control, Scripts-Verdrahtung und zugehoerige Localization-Eintraege symmetrisch",
+    "Nummeriert alle betroffenen ItemN-Sammlungen anschliessend lueckenlos ab Item1 neu",
+    "Belegt per Gegenprobe, dass ausser den Item-Nummern nichts veraendert wurde",
+    "validate_repx.py laeuft ohne FAIL durch, insbesondere C04"
+  ]
+}
