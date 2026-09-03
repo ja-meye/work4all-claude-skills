@@ -4,7 +4,7 @@ Jedes Muster ist **verhaltensbasiert** beschrieben — an dem, was der Code tut,
 
 ---
 
-## (a) BeforePrint-Sabotage der PrintOnPage-Logik
+## (a) · Unterpunkt-ID `DXJ0001.B` · BeforePrint-Sabotage der PrintOnPage-Logik
 
 **Muster:** Ein `BeforePrint`-Handler eines Bands oder Subbands setzt `e.Cancel = true` oder `Visible = false`, basierend auf einem groben globalen Zähler (z.B. einer Variable, die einfach bei jedem Seitenumbruch hochgezählt wird), statt auf tatsächlichem Seiteninhalt. Im selben Band/Subband existiert daneben ein `PrintOnPage`-Handler, der eigentlich die richtige, feingranulare Sichtbarkeitsentscheidung treffen würde (z.B. anhand `e.PageIndex`, gecachten Werten pro Seite) — aber wegen des `Cancel`/`Visible=false` im `BeforePrint` nie zum Zug kommt.
 
@@ -16,7 +16,7 @@ Jedes Muster ist **verhaltensbasiert** beschrieben — an dem, was der Code tut,
 
 ---
 
-## (b) KeepTogether=false auf einer Preiszeile bei sumCarryoverSum-Nutzung — **[ÜBERHOLT, siehe Muster (g)]**
+## (b) · keine eigene Unterpunkt-ID (historisch, siehe `DXJ0001.G`) · KeepTogether=false auf einer Preiszeile bei sumCarryoverSum-Nutzung — **[ÜBERHOLT, siehe Muster (g)]**
 
 > **Status seit dem zweiten Fix-Durchlauf (28.08., vom Kunden in Visual Studio getestet und bestätigt):** Dieser Ansatz gilt nicht mehr als Standardempfehlung für neue Fälle. In der Praxis hat `KeepTogether=true` auf Zeile + Band zu spürbar unerwünschtem Weißraum am Seitenende geführt und zudem nicht das eigentliche Symptom behoben, das den Kunden gestört hat (siehe Muster (g)). Der Kunde hat `KeepTogether` an beiden Stellen wieder zurückgenommen und stattdessen mit Mindesthöhen gearbeitet. Dieser Textabschnitt bleibt zu Diagnosezwecken stehen (z. B. um eine ältere, noch nach diesem Muster reparierte Report-Variante wiederzuerkennen), aber bei einer NEUEN Anwendung: nicht mehr dieses Muster vorschlagen, sondern direkt Muster (g) prüfen und anwenden.
 
@@ -32,7 +32,7 @@ Jedes Muster ist **verhaltensbasiert** beschrieben — an dem, was der Code tut,
 
 ---
 
-## (c) Übertrag-Sichtbarkeit ignoriert "Beleg hat Betrag, aber noch nicht auf dieser Seite gedruckt"
+## (c) · Unterpunkt-ID `DXJ0001.A` (gemeinsam mit Muster (f)) · Übertrag-Sichtbarkeit ignoriert "Beleg hat Betrag, aber noch nicht auf dieser Seite gedruckt"
 
 **Muster:** Eine Sichtbarkeitsbedingung für Übertrag-Zeile(n) oder Folgeseiten-Tabellenkopf hängt ausschließlich an `carry != 0` (bzw. äquivalent: der seitenbezogene `sumCarryoverSum`-Wert). Es gibt keine zusätzliche Berücksichtigung des Falls: der Beleg hat insgesamt einen Betrag > 0, aber auf der aktuellen Seite wurde bislang keine bepreiste Position gedruckt (z.B. weil ein langer Kopftext die erste Position auf Seite 2 verdrängt hat).
 
@@ -44,7 +44,7 @@ Jedes Muster ist **verhaltensbasiert** beschrieben — an dem, was der Code tut,
 
 ---
 
-## (d) Fehlender Batch-Sicherheits-Reset bei Sammeldruck
+## (d) · Unterpunkt-ID `DXJ0001.H` · Fehlender Batch-Sicherheits-Reset bei Sammeldruck
 
 **Muster:** Ein `GroupFooter`- oder vergleichbarer Handler setzt irgendwann `Visible = false` auf ein Element (z.B. um den Übertrag auf der letzten Seite eines Belegs auszublenden), aber es gibt keinen expliziten Reset auf `Visible = true` zu Beginn des *nächsten* Belegs im selben Reportlauf.
 
@@ -56,7 +56,7 @@ Jedes Muster ist **verhaltensbasiert** beschrieben — an dem, was der Code tut,
 
 ---
 
-## (e) Skript-Hygiene: leere Print-Event-Handler und toter auskommentierter Code
+## (e) · Unterpunkt-ID `DXJ0001.C` · Skript-Hygiene: leere Print-Event-Handler und toter auskommentierter Code
 
 **Muster:** Zwei Unterfälle:
 - Ein Event-Handler (`BeforePrint`, `AfterPrint`, `PrintOnPage`, ...) hat einen Rumpf, der ausschließlich aus Kommentaren besteht oder komplett leer ist — keine aktive Anweisung.
@@ -75,9 +75,18 @@ Jedes Muster ist **verhaltensbasiert** beschrieben — an dem, was der Code tut,
 
 **Automatisierungssicherheit:** **Automatisch sicher und PFLICHT-Bestandteil jedes Fix-Laufs** (seit 28.08., siehe SKILL.md „Kundenvorgabe" — war ursprünglich optional/nur auf Wunsch, ist das nicht mehr), aber nur nachdem Regel 1–4 einzeln geprüft wurden. Vor dem Löschen jeder Variable/Methode per Textsuche verifizieren (nicht raten), dass sie außerhalb ihrer eigenen Deklaration nirgends mehr gelesen/aufgerufen wird — siehe `known-issues.md` Eintrag 8 für den Vorfall, der dazu geführt hat, dass dieser Schritt jetzt verbindlich ist.
 
+### Erweiterte, konkrete Bereinigungsfälle (seit v1.2.0)
+
+Vier zusätzliche, konkrete Unterfälle derselben Hygiene-Regel — gefunden am `dxAio_template`-Report, aber verhaltensbasiert genug formuliert, um auf andere Varianten übertragbar zu sein. Alle vier unterliegen denselben Regeln 1–4 oben (insbesondere: vor dem Entfernen per Textsuche verifizieren, dass wirklich nirgends mehr referenziert).
+
+7. **work4all-interne Sonderparameter, die in einem Kunden-Report nichts verloren haben.** Manche Report-Varianten enthalten Variablen, die erkennbar nur für work4all-interne Zwecke gedacht sind, nicht für den eigentlichen Kundenreport — Muster: eine Variable mit einem Kommentar, der auf eine interne work4all-Struktur verweist (Artikel-Hauptgruppe/-Obergruppe, interne Gruppen-/Objektcodes o. ä.), ohne dass ein Kundenreport diese Unterscheidung fachlich braucht. Beispiel aus `dxAio_template`: `int Lizenz = 0;` und `int ArtikelServerHosting = 0;` (Kommentare verweisen auf work4all-interne Artikel-Hauptgruppen-/Obergruppen-Codes). **Fix:** Nach Verifikation, dass die Variable(n) nirgends mehr im Skript gelesen werden, entfernen. **Automatisierungssicherheit:** *Vorschlag mit Rückfrage* beim ersten Auftreten in einer neuen Report-Variante (es könnte in einer anderen Variante doch fachlich genutzt werden) — danach, sobald einmal für einen Report bestätigt, *automatisch sicher* bei identischem Namen/Kommentar-Muster.
+8. **Ein Band, das ausschließlich einen alten, jetzt redundanten `pageCounter`-basierten Seite-1-Abstand erzeugt hat.** Muster: Ein eigenes SubBand mit Standardhöhe `0` und einer `BeforePrint`-Methode nach dem Schema `if (pageCounter != 1) { e.Cancel = true; }` (druckt also NUR auf Seite 1, mit Höhe 0 — kann de facto nie sichtbaren Inhalt erzeugen). Beispiel: `Sub_AbstandSeite1` mit `Sub_AbstandSeite1_BeforePrint`. **Bedingung für den Fix (beide müssen zutreffen, sonst nicht anfassen):** (a) die Standardhöhe des Bands ist `0` (direktes Attribut UND `<Localization>`-Block prüfen, siehe `repx-technical-notes.md`), UND (b) im Skript wird `HeightF` dieses Bands an keiner Stelle programmatisch erhöht. **Fix:** Band inkl. `BeforePrint`-Methode und XML-Verdrahtung vollständig entfernen (symmetrische Entfernung, siehe `validation-checklist.md` Punkt 6). **Automatisierungssicherheit:** *Vorschlag mit Rückfrage* — eine Bandentfernung ist strukturell eingreifender als eine reine Variablen-/Methoden-Löschung, deshalb trotz erfüllter Bedingung nicht automatisch scharf, sondern dem Nutzer als konkreter Vorschlag mit Begründung vorgelegt.
+9. **Reine Debug-String-Ausgaben ohne produktiven Zweck.** Muster: Ein `_dbgHelper`-artiges Feld (oder vergleichbar benannt), das ausschließlich zu Diagnosezwecken während der Entwicklung befüllt wurde (typisches Muster: `string.Format("...", e.PageIndex + 1, ...)` mit rein diagnostischen Platzhaltern), aber von keinem sichtbaren Report-Element gelesen wird. **Fix:** Entfernen wie jeden anderen toten Code (Regel 1–4 oben). **Automatisierungssicherheit:** *Automatisch sicher*, sobald per Textsuche verifiziert ist, dass kein sichtbares Control den Wert liest — Debug-Ausgaben dieser Art sind per Definition nicht Teil der fachlichen Logik.
+10. **Kommentare kürzen statt löschen.** Kein Löschfall, sondern eine Kürzungsregel: Lange, ausführliche Fließtext-Kommentare (mehrzeilige Prosa-Erklärungen) werden auf das Wesentliche gekürzt — Stichpunkt-artig, so dass die Kernaussage erhalten bleibt (Begründung/Architekturentscheidung, siehe Regel 4 oben), aber ohne wiederholende oder ausschmückende Formulierungen. Ziel: ein Kommentar soll knapp genug sein, dass ein Mensch oder eine KI ihn schnell erfassen und daraus die richtigen Schlüsse ziehen kann, ohne einen Prosa-Absatz lesen zu müssen. **Nicht kürzen:** der `work4all-log`-Block (siehe `fix-log-format.md`, Regel 3) und Kommentare, die bereits knapp sind. **Automatisierungssicherheit:** *Automatisch sicher* als Teil der Hygiene — Kürzung ist per Definition inhaltserhaltend, solange die Kernaussage stehen bleibt; im Zweifel (Kommentar enthält eine nicht eindeutig trennbare fachliche Detailinformation) lieber etwas länger lassen als eine relevante Information verlieren.
+
 ---
 
-## (f) Übertrag/Folgeseiten-Sichtbarkeit ignoriert, ob der Detailbereich überhaupt schon begonnen hat
+## (f) · Unterpunkt-ID `DXJ0001.A` (gemeinsam mit Muster (c)) · Übertrag/Folgeseiten-Sichtbarkeit ignoriert, ob der Detailbereich überhaupt schon begonnen hat
 
 **Muster:** Die Sichtbarkeitsbedingung für Übertrag (oben/unten) bzw. Folgeseiten-Tabellenkopf stützt sich auf eine dokumentweite Gesamtsumme (siehe Muster (c) oben) als Rückfallbedingung — z. B. `carry != 0 || gesamtsumme != 0`. Diese Rückfallbedingung kann fälschlich auch dann `true` werden, wenn der eigentliche Detailbereich (die Positionstabelle) auf der aktuellen bzw. einer vorangehenden Seite **noch gar nicht begonnen hat zu drucken** — etwa weil vorgelagerter Inhalt (ein sehr langer Kopftext, oder eine optionale Übersichts-/Zusammenstellungs-Subband, die über einen Report-Parameter wie `ArgShowTitleOverview` gesteuert wird und selbst einen verschachtelten Subreport mit eigenen Summenzeilen enthalten kann) die Seite(n) vollständig einnimmt, bevor der Detailbereich überhaupt startet.
 
@@ -91,7 +100,7 @@ Jedes Muster ist **verhaltensbasiert** beschrieben — an dem, was der Code tut,
 
 ---
 
-## (g) Mindesthöhen statt KeepTogether gegen Weißraum und abgeschnittene Übertrag-Anzeige
+## (g) · Unterpunkt-ID `DXJ0001.G` · Mindesthöhen statt KeepTogether gegen Weißraum und abgeschnittene Übertrag-Anzeige
 
 **Ersetzt Muster (b) als aktuelle Standardempfehlung.** Vom Kunden in Visual Studio umgesetzt und in DevExpress bestätigt getestet (28.08.).
 
@@ -119,3 +128,47 @@ Zusätzlich, als verwandtes Symptom in manchen Report-Varianten: Die Positionsta
 > **Wichtig, verbindlich seit 28.08. (siehe SKILL.md „Kundenvorgabe" und `known-issues.md` Eintrag 8):** Muster (g) wird in der Praxis besonders leicht vergessen, weil es NICHT im C#-Skript-Diff sichtbar ist — es lebt komplett in reinen XML-/Layout-Eigenschaften, teilweise indirekt im `<Localization>`-Block. Ein Fix-Lauf, der nur das Skript diffed und Muster (g) deshalb übersieht, gilt als unvollständig, selbst wenn der Skript-Teil für sich korrekt war. Bei jedem Lauf mit Referenzdatei ist deshalb die Pflicht-Checkliste aus SKILL.md Schritt 2 (KeepTogether auf allen Ebenen, Höhen inkl. Localization-Block, Zeilenanzahl kritischer Tabellen) verbindlich durchzugehen — unabhängig davon, ob der Skript-Diff bereits „sauber" aussah.
 
 **Offene Frage / nicht abschließend geklärt:** Der genaue Kausal-Zusammenhang zwischen der Rücknahme von `KeepTogether` und dem ursprünglichen Muster-(b)-Risiko (aufgesplittete Preiszeile verfälscht `sumCarryoverSum`) ist nicht erneut aus der DevExpress-Rendering-Pipeline hergeleitet worden — dieser Eintrag dokumentiert den vom Kunden getesteten und für gut befundenen Zustand, nicht einen bewiesenen Mechanismus. Falls nach Anwendung dieses Fixes auf einer neuen Report-Variante ein falscher Übertragswert durch eine aufgesplittete Preiszeile auffällt, ist das ein Hinweis darauf, dass Muster (b) für DIESEN Report doch relevant bleibt und mit dem Kunden gemeinsam abgewogen werden sollte (Weißraum vs. korrekter Wert bei Seitenumbruch mitten in einer Position).
+
+---
+
+## (h) · Unterpunkt-ID `DXJ0001.E` · `AllowMarkupText` auf wachsender mehrzeiliger Zelle erzeugt Leerzeile — plus Folge-Padding auf nachfolgenden SubBands
+
+**Vom Kunden in DevExpress bestätigt getestet (31.08.).** Siehe `known-issues.md` Einträge 14 und 15 für die vollständige Diagnose-Historie (inkl. widerlegter Zwischenhypothesen).
+
+**Muster / Symptom:** Eine wachsende (`CanGrow`, kein `CanGrow="false"`), mehrzeilige (`Multiline="true"`) `XRTableCell`/`XRLabel` hat `AllowMarkupText="true"` gesetzt, obwohl die gebundene Expression keinerlei Markup-Tags erzeugt — oft zusammen mit einem nicht-standardmäßigen `LineSpacing`. Symptom beim Druck: eine zusätzliche Leerzeile/ein zu großer Abstand direkt NACH dem Ende dieser Zelle, bevor der nächste Inhalt beginnt. Charakteristisch: **kein** Zusammenhang mit Seitenumbrüchen (tritt auch bei vollständigem Druck auf einer einzigen Seite auf), aber ein **Schwellenwert-Zusammenhang mit der Zeilenanzahl** des Zelltexts (bei kurzem Text kein Effekt, ab einer gewissen Zeilenzahl — im bestätigten Fall ca. 8 Zeilen — deutlich sichtbar).
+
+**Ursache:** DevExpress berechnet die automatische Wachstumshöhe (`CanGrow`) für mehrzeiligen Text im Markup-Modus (`AllowMarkupText="true"`) anders als im reinen Textmodus, mit einem Rundungsverhalten, das sich mit zunehmender Zeilenzahl zu einer vollen zusätzlichen Zeile aufsummieren kann.
+
+**Fix:**
+1. Prüfen, ob die Expression der betroffenen Zelle tatsächlich Markup-Tags erzeugt (`<b>`, `<br>`, `<color>` o. ä. im Expression-Text oder in den zugrundeliegenden Datenfeldern). Falls NICHT: `AllowMarkupText="true"` → `"false"` setzen (bzw. Attribut entfernen, da `false` Default ist).
+2. Direkt anschließend prüfen, ob dadurch ein vorher (unbeabsichtigt) kompensierender Abstand zum nächsten Band/zur nächsten Zeile wegfällt (siehe `known-issues.md` Eintrag 15) — falls ja: `Padding` (Top) der ersten Zeile des/der unmittelbar nachfolgenden `SubBand`(s) moderat erhöhen (im bestätigten Fall: `0` → `10`), NICHT die übrigen Padding-Werte anfassen.
+
+**Wichtiger technischer Hinweis:** Dieser Fehler ist weder im C#-Skript-Diff noch in einem reinen XML-Wohlgeformtheits-/Struktur-Check sichtbar — er betrifft eine einzelne, unscheinbare Attribut-Wert-Änderung mit rein visueller Auswirkung. Er lässt sich nicht durch Diff-Analyse allein erkennen, sondern nur durch das gemeldete Druckbild (oder testweises Ausprobieren bei Reports mit sehr langen mehrzeiligen Textfeldern).
+
+**Automatisierungssicherheit:** *Vorschlag mit Rückfrage* für beide Teile. Punkt 1 (AllowMarkupText) niemals blind scharf anwenden — immer erst als separate Diagnose-Testdatei ausliefern und den Nutzer die konkret auslösende (lange) Position testdrucken lassen, bevor ein produktiver Fix mit Backup/Changelog/work4all-log-Eintrag erfolgt. Punkt 2 (Padding) erst NACH bestätigtem Punkt 1 angehen, und die betroffenen Zellnamen/der genaue Top-Wert sind reportspezifisch — bei einer neuen Report-Variante neu bestätigen, nicht blind übertragen. Bei exakt diesem Report (`dxAio_template`) gelten beide Teile inzwischen als bestätigt und können bei erneutem Auftreten direkt angewendet werden.
+
+---
+
+## (i) · Unterpunkt-ID `DXJ0001.F` · Unterdrücktes Subband reserviert trotzdem Platz auf der Seite, auf der es unterdrückt wird
+
+**Vom Kunden bestätigt getestet (02.–03.09., über eine sehr lange iterative Diagnose-Reihe).** Siehe `known-issues.md` Einträge 16–20 für die vollständige Diagnose-Historie inkl. widerlegter Zwischenhypothesen (u. a. eine anfänglich vermutete, nicht existente strukturelle DevExpress-Engine-Grenze, analog zu einem bekannten Crystal-Reports-Phänomen).
+
+**Muster / Symptom:** Ein SubBand (typischerweise ein Folgeseiten-Tabellenkopf oder eine Übertrag-Zeile, die per `RepeatEveryPage`+Sichtbarkeitslogik nur ab Seite 2 gedruckt werden soll) wird auf Seite 1 zwar inhaltlich korrekt unterdrückt (kein sichtbarer Text/keine sichtbare Tabelle) — reserviert dort aber trotzdem seinen vollen Platz, sichtbar als ungewollter Leerraum. Charakteristisch: Die Unterdrückung selbst funktioniert (auf Folgeseiten erscheint der Inhalt korrekt), nur die Seite-1-Platzreservierung bleibt bestehen. Ein strukturell ähnliches, aber unauffälliges Nachbar-Subband (ohne dasselbe Symptom) kann fälschlich als Beweis für eine grundsätzliche, unvermeidbare Engine-Grenze missverstanden werden — meist liegt der eigentliche Unterschied stattdessen in einer der vier Ursachen unten.
+
+**Ursache — vier zusammenwirkende, unabhängig auftretende Teilursachen (alle vier zusammen anwenden, nicht nur einzelne):**
+
+1. **Bandeigenes `BeforePrint` fehlt.** Die Unterdrückung läuft ausschließlich über eine feingranulare `PrintOnPage`-Bedingung (z. B. Muster (a)/(c)/(f)) — die verhindert zwar den sichtbaren Inhalt, aber `PrintOnPage` feuert NACH der Platz-/Layoutberechnung, kann also keinen bereits reservierten Platz mehr zurückgeben.
+2. **`CanGrow` dynamisch statt statisch umgeschaltet.** Wird `CanGrow` erst innerhalb von `PrintOnPage` gesetzt, hat das keine Wirkung mehr — die `CanGrow`-gesteuerte Layoutmessung ist zu diesem Zeitpunkt bereits abgeschlossen (siehe `repx-technical-notes.md`, Abschnitt „BeforePrint vs. PrintOnPage"). Wichtige Nebenerkenntnis: `CanGrow="true"` erlaubt nur WACHSEN über die zugewiesene Höhe hinaus, niemals SCHRUMPFEN darunter — für das Schrumpfen auf Seite 1 ist es also ohnehin der falsche Hebel.
+3. **Verschachtelte Controls behalten ihre eigene, unabhängige Höhe.** Ein `XRLabel`/`XRTableCell` innerhalb des Subbands kann eine eigene, separat persistierte `HeightF`/`SizeF` tragen, die unabhängig von der Höhe der umgebenden Tabelle/des Bands ist — ein Schrumpfen der Tabelle allein lässt das Kind-Control auf seiner alten, größeren Höhe stehen.
+4. **`HeightF` als direktes Attribut auf dem Band selbst ist wirkungslos.** Ein SubBand berechnet seine tatsächlich gedruckte Höhe aus seinem größten Kind-Element — ein direkt am Band gesetztes `HeightF`-Attribut wird von DevExpress beim Speichern schlicht verworfen (nicht mal mitgeschrieben). Der wirksame Weg, die Band-Standardhöhe zu setzen, ist ein `<Localization>`-Eintrag (`Path="HeightF"`), nicht das direkte Attribut — siehe `repx-technical-notes.md`, Abschnitt „Der `<Localization>`-Block".
+
+**Fix (alle vier Teile zusammen anwenden — Teilfixe allein lösen das Symptom erfahrungsgemäß nicht vollständig):**
+
+1. Das betroffene Subband strukturell in zwei Bänder aufteilen, falls es sowohl Berechnungscontrols (die auf JEDER Seite ungebremst feuern müssen, damit z. B. eine seitenübergreifende Summe weiterläuft) als auch reinen Anzeige-Inhalt enthält: ein Band behält nur die Berechnung (kein `e.Cancel`), ein zweites, neues Band bekommt nur den sichtbaren Inhalt plus ein **eigenes, bandeigenes** `BeforePrint` mit `e.Cancel = true`. Ist keine Berechnung betroffen (Band ist reiner Anzeige-Inhalt), genügt das bandeigene `BeforePrint` direkt am bestehenden Band, ohne Aufteilung.
+2. Die Bedingung im bandeigenen `BeforePrint` MUSS auf einer seitenindex-unabhängigen, in `BeforePrint` bereits verlässlich verfügbaren Variable beruhen (z. B. einem einfachen, in einer anderen `BeforePrint`-Kette hochgezählten Seitenzähler wie `pageCounter`) — NICHT auf einer Variable, die erst in der `PrintOnPage`-Phase gesetzt wird (z. B. `_detailPrintedSoFar` aus Muster (f)): Diese ist auf Band-Ebene in `BeforePrint` nicht zuverlässig verfügbar, weil `PrintOnPage` der Kind-Controls dieses Bands zu diesem Zeitpunkt noch gar nicht gelaufen ist.
+3. `CanGrow="true"` dauerhaft (statisch im XML, nicht dynamisch in `PrintOnPage`) auf den relevanten Zellen setzen. Verschachtelte Labels/Zellen, die selbst wachsen/schrumpfen sollen, bekommen ein **eigenes** `BeforePrint`, das ihre eigene `HeightF` passend zum Seitenzustand setzt (z. B. minimal, wenn noch nicht gedruckt werden soll, voller Wert sonst).
+4. Die eigenen, separat persistierten Standardhöhen (`SizeF`/`HeightF`, ggf. im `<Localization>`-Block, siehe Ursache 4 und `known-issues.md` Eintrag 6) aller betroffenen verschachtelten Controls UND des äußeren Bands selbst auf einen kleinen Wert absenken. **Wichtig:** DevExpress erzwingt für `HeightF`/`H` einen Mindestwert von **5** — ein im Code gesetzter Wert unter 5 (z. B. `1`) wird beim Lesen/Anzeigen im Enduserdesigner-Properties-Panel stillschweigend auf 5 angehoben; direkt den erzwungenen Minimalwert 5 verwenden vermeidet eine unnötige, in der Praxis sichtbare Restunschärfe.
+
+**Wichtiger technischer Hinweis:** Dieser Fehler ist im reinen C#-Skript-Diff nur teilweise sichtbar (Fix-Teil 1 und 2 ja, Fix-Teil 3 und 4 nicht, wenn sie über den `<Localization>`-Block laufen) — ein vollständiger struktureller Diff (siehe `repx-technical-notes.md`, Abschnitt „Der `<Localization>`-Block") ist zwingend nötig, reiner Skript-Vergleich reicht nicht (vgl. `known-issues.md` Eintrag 8, dasselbe Muster wie bei Fix (g)).
+
+**Automatisierungssicherheit:** *Vorschlag mit Rückfrage* für alle vier Teile — die Bandaufteilung (Teil 1) ist strukturell eingreifend genug, dass sie nicht ohne Bestätigung automatisch angewendet werden sollte, selbst bei vorliegender Referenzdatei. Automatisch sicher nur, wenn eine bestätigte Referenzdatei exakt denselben Bandaufbau (gleiche Aufteilung Berechnung/Anzeige) bereits zeigt.

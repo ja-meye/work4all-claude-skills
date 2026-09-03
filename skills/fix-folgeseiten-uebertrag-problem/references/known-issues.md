@@ -145,6 +145,94 @@ Nach Auslieferung meldete der Nutzer: das Wort "Übertrag €" erschien zwar kor
 
 ---
 
+## 14. `AllowMarkupText="true"` + custom `LineSpacing` auf einer wachsenden (`CanGrow`) mehrzeiligen `XRTableCell` erzeugt eine zusätzliche Leerzeile — CONFIRMED (31.08., vom Kunden testgedruckt und bestätigt)
+
+**Was passiert ist:** Der Kunde meldete eine Leerzeile/einen zu großen Abstand unmittelbar VOR der "Rabatt 10 %"-Zeile — aber nur bei Positionen mit langer, mehrzeiliger Bezeichnung (beobachtet ab ca. 8 Zeilen; bei ~3 Zeilen kein Effekt) und ausdrücklich auch dann, wenn die Position komplett auf einer Seite gedruckt wurde (Seitenumbruch damit als Ursache ausgeschlossen). Erste Hypothese (eine eigene, immer sichtbare `Detail`-Band-Höhe im Summen-Subreport) wurde durch genau diese Beobachtung widerlegt, da sie einen konstanten, textlängen-unabhängigen Effekt vorhergesagt hätte.
+
+Strukturanalyse ergab: Die Bezeichnungszelle `tbl00` (in `Sub_POS` → `xrTable1` → `xrTableRow1`, gebunden an das Berechnungsfeld `_BezeichnungAndArtNrPOS`) hatte `AllowMarkupText="true"` zusammen mit einem nicht-standardmäßigen `LineSpacing="1.1"` gesetzt — obwohl der Expression-Text (ArtikelNr + Bezeichnung + optionale interne Bemerkung, per `NewLine()` getrennt) keinerlei Markup-Tags erzeugt. Diese Kombination ist ein bekannter DevExpress-Fallstrick: Die automatische Höhenberechnung (`CanGrow`) für mehrzeiligen Text rechnet im Markup-Modus anders (mit Rundungsfehlern) als im reinen Textmodus, und der Fehler akkumuliert bzw. wird erst ab einer bestimmten Zeilenzahl als volle zusätzliche Leerzeile sichtbar — passt exakt zum beobachteten Schwellenwert-Verhalten.
+
+Ein Nebenverdacht (`tc_GPreis` hat `RowSpan="3"` in einer `xrTable1`, die jetzt nur noch 1 Zeile hat) wurde geprüft und verworfen: Dieser Zustand ist in Ziel- UND Referenzdatei byte-identisch vorhanden, also kein Unterschied und keine plausible Ursache für ein Symptom, das (soweit bekannt) nur in der Zieldatei auftrat.
+
+**Fix (vom Kunden per Testdruck bestätigt):** `AllowMarkupText="true"` → `"false"` auf `tbl00` gesetzt (bzw. beim erneuten Speichern im DevExpress-Designer wird das Attribut, da `false` der Default ist, teilweise ganz aus der XML entfernt — funktional identisch). `LineSpacing="1.1"` unverändert gelassen (nicht Teil der Ursache, nur der Auslöser in Kombination mit `AllowMarkupText`). Ergebnis: Leerzeile vollständig verschwunden, keine sichtbare Veränderung an der Bezeichnung selbst.
+
+**Was man daraus lernt:** `AllowMarkupText="true"` auf einer wachsenden, mehrzeiligen `XRTableCell`/`XRLabel` sollte grundsätzlich hinterfragt werden, wenn die dahinterliegende Expression keine Markup-Tags erzeugt — es ist dann reines, unnötiges Risiko für genau diese Art von höhenabhängigem Rendering-Fehler. Der Fehler ist rein visuell/Layout-seitig, erzeugt keinen XML- oder Skript-Diff-Auffälligkeit (Attribut-Wert-Änderung an einer unscheinbaren Stelle) und wird von keinem der bisherigen Validierungspunkte (1–12) erfasst.
+
+**Wie man es künftig vermeidet:** Bei JEDER wachsenden (`CanGrow`, kein explizites `CanGrow="false"`), mehrzeiligen (`Multiline="true"`) Text-/Tabellenzelle mit gesetztem `AllowMarkupText="true"`: prüfen, ob die gebundene Expression tatsächlich Markup-Tags (`<b>`, `<br>`, `<color>` o. ä.) erzeugt. Falls nicht: `AllowMarkupText` auf `false` als Verdachtsmoment notieren, nicht automatisch scharf ändern (siehe Automatisierungssicherheit unten), aber bei einem gemeldeten Symptom "Leerzeile/Abstand bei langem Text, unabhängig von Seitenumbruch" als ersten Kandidaten prüfen. Neuer Fix-Katalog-Eintrag: siehe `fix-catalog.md` Muster (h).
+
+**Automatisierungssicherheit:** *Vorschlag mit Rückfrage* — vor dem scharfen Anwenden immer erst als reine Diagnose-Testdatei (kein produktives Update, kein Log-Eintrag) ausliefern und vom Nutzer per Testdruck der auslösenden (langen) Position gegenprüfen lassen, wie in diesem Fall geschehen. Erst nach Bestätigung als produktiver Fix mit Backup/Changelog/work4all-log übernehmen.
+
+---
+
+## 15. Folgefund: Nach Behebung von Eintrag 14 sitzt die nächste `SubBand`-Zeile (Rabatt/Rabatt2/Liefertermin/Zolltarifnummer) zu eng am vorherigen Text
+
+**Was passiert ist:** Unmittelbar nachdem der Fix aus Eintrag 14 bestätigt getestet war ("Leerzeile ist jetzt komplett weg"), meldete der Kunde ein neues, direkt anschließendes Symptom: Die Rabatt-Zeile sitzt jetzt sehr nah am vorherigen Text — der Wegfall der (fehlerhaften) zusätzlichen Höhe hat offenbar einen Abstand mit entfernt, der visuell als "ausreichend Luft" gewirkt hatte, obwohl er eigentlich Symptom des Fehlers war.
+
+**Was man daraus lernt:** Ein Höhenberechnungs-Fix an einer wachsenden Zelle kann einen vorher (unbeabsichtigt) kompensierenden Abstand mit entfernen. Das ist kein neuer, unabhängiger Fehler, sondern eine direkte, erwartbare Nebenwirkung des vorherigen Fixes — nach jedem Höhen-/Wachstums-Fix an einer Zelle bewusst auch die unmittelbar nachfolgenden Bänder/Zeilen auf ihren Abstand zum vorherigen Inhalt hin gegenprüfen, nicht nur die reparierte Zelle selbst isoliert betrachten.
+
+**Fix (vom Kunden selbst im DevExpress-Designer ermittelt und bestätigt):** `Padding` (Top) von `0` auf `10` erhöht, auf den Zellen der jeweils ersten Zeile der vier direkt auf `Sub_POS` folgenden `SubBands`:
+- `Sub_Rabatt` → `xrTableRow4` → `xrTableCell18` ("Rabatt")
+- `Sub_Rabatt2` → `xrTableRow13` → `xrTableCell48` ("Rabatt 2")
+- `Sub_LieferterminPOS` → `xrTableRow39` → `xrTableCell185` ("LTDatumPOS")
+- `Sub_ZollinformationenPOS` → `xrTableRow55` → `xrTableCell191` ("Zolltarifnummer")
+
+Padding-Format ist `Left,Top,Right,Bottom,Dpi` — nur der zweite Wert (Top) wird geändert, die übrigen Werte bleiben unangetastet (in der Zieldatei z. B. `10,0,10,0,254` → `10,10,10,0,254`; in der Referenzdatei war der Right-Wert bereits `0` statt `10` — dieser vorbestehende Unterschied zwischen Ziel- und Referenzdatei ist NICHT Teil dieses Fixes und wurde bewusst unverändert gelassen).
+
+**Wie man es künftig vermeidet:** Diese vier Zellen sind für DIESEN Report konkret bestätigt — bei einer neuen Report-Variante mit strukturell anderen Namen ist das Muster (Top-Padding der ersten Zeile jedes direkt auf `Sub_POS` folgenden `SubBand`) zu übertragen, aber die betroffenen Zellnamen und der genaue Top-Wert müssen für den jeweiligen Report neu bestätigt werden, nicht blind mit `10` übernommen werden. Siehe `fix-catalog.md` Muster (h) für die verhaltensbasierte Beschreibung.
+
+**Automatisierungssicherheit:** *Vorschlag mit Rückfrage*, außer bei exakt diesem Report + exakt diesen vier Zellnamen, wo es nach dieser Bestätigung als **automatisch sicher** gelten kann (analog zur Regelung bei Muster (g)).
+
+---
+
+## 16. `CanGrow="true"` erlaubt nur Wachsen über die zugewiesene Höhe, niemals Schrumpfen darunter
+
+**Was passiert ist:** Bei dem Versuch, ein Subband auf Seite 1 möglichst klein zu halten, wurde `CanGrow` dynamisch in `PrintOnPage` auf `false`/`true` umgeschaltet, in der Annahme, dass `CanGrow="false"` dabei hilft, eine Zelle auf ihre aktuell zugewiesene (kleine) Höhe zu zwingen. Ergebnis: Der sichtbare Inhalt auf Folgeseiten verschwand teilweise, ohne dass sich am Seite-1-Leerraum etwas änderte.
+
+**Was man daraus lernt:** `CanGrow="true"` ist eine reine Wachstums-Erlaubnis nach OBEN (der Inhalt darf mehr Platz einnehmen, als die zugewiesene Höhe vorsieht, falls nötig) — es hat keine symmetrische Schrumpf-Wirkung nach unten. Eine Zelle mit `CanGrow="true"` schrumpft nie unter ihre zugewiesene Höhe, unabhängig davon, wie kurz/leer der tatsächliche Inhalt ist. Für „auf Seite 1 klein halten" ist `CanGrow` also grundsätzlich der falsche Hebel — das eigentliche Schrumpfen muss über die zugewiesene `HeightF`/`SizeF` selbst passieren (siehe Eintrag 6 zum `<Localization>`-Block).
+
+**Wie man es künftig vermeidet:** `CanGrow` als reines Wachstums-Flag behandeln, statisch im XML setzen (nicht dynamisch in `PrintOnPage` umschalten — siehe Eintrag 17, wirkt ohnehin zu spät). Für die eigentliche Höhensteuerung pro Seitenzustand die tatsächliche `HeightF` der betroffenen Controls in einem bandeigenen `BeforePrint` selbst setzen (siehe `fix-catalog.md` Muster (i)).
+
+---
+
+## 17. `e.PageIndex` ist in `BeforePrint` unzuverlässig — nur in `PrintOnPage` verlässlich verfügbar
+
+**Was passiert ist:** Ein Versuch, `CanGrow`/`HeightF` dynamisch anhand von `e.PageIndex` innerhalb von `PrintOnPage` zu steuern, zeigte in der Diagnose korrekte, plausible Werte beim Auslesen — aber keine sichtbare Wirkung im tatsächlichen Druckbild. Ursache wurde über einen bereits im Skript vorhandenen Entwickler-Kommentar gefunden: `PrintOnPage` feuert NACH der finalen Paginierung, aber die layoutrelevante Höhen-/Wachstumsmessung (die `CanGrow` steuert) ist zu diesem Zeitpunkt bereits abgeschlossen — eine dort vorgenommene Änderung kommt für die aktuelle Seite zu spät, auch wenn die Eigenschaft selbst korrekt gesetzt und zurückgelesen werden kann.
+
+**Was man daraus lernt:** `BeforePrint` feuert VOR der Paginierung — `e.PageIndex`/`e.PageCount` sind dort nicht verlässlich. `PrintOnPage` feuert NACH der Paginierung mit verlässlichem `e.PageIndex`, aber nach dem Zeitpunkt, an dem layoutrelevante Größen (`CanGrow`-gesteuertes Wachstum, Platzreservierung) bereits feststehen. Für alles, was tatsächlich Platz auf der Seite beeinflussen soll (Höhen, `e.Cancel`), ist `BeforePrint` der richtige Ort — aber dort muss die Entscheidungsgrundlage seitenindex-UNABHÄNGIG sein, weil `e.PageIndex` dort nicht zuverlässig ist.
+
+**Wie man es künftig vermeidet:** Für Platz-/Höhenentscheidungen, die auf der aktuellen Seite wirken sollen, immer `BeforePrint` verwenden — mit einer Bedingung, die NICHT auf `e.PageIndex` beruht, sondern auf einem seitenindex-unabhängigen Signal, das in der `BeforePrint`-Phase bereits verlässlich gesetzt ist (siehe Eintrag 19 für ein konkretes Beispiel und dessen Fallstrick). Für alles, was tatsächlich vom fertigen Seitenlayout abhängt (z. B. „ist dies die erste Seite mit einer bepreisten Position"), bleibt `PrintOnPage` richtig — beide Phasen haben unterschiedliche Zwecke, keine ersetzt die andere.
+
+---
+
+## 18. DevExpress erzwingt einen Mindestwert von 5 für `HeightF`/`H` — ein programmatisch gesetzter kleinerer Wert wird beim Lesen stillschweigend angehoben
+
+**Was passiert ist:** Über die gesamte Diagnose hinweg wurde `HeightF`/`SizeF` diverser Controls per Code auf `1` (praktisch minimal) gesetzt. Jeder Diagnose-Readback (sowohl im eigenen Debug-String als auch im Enduserdesigner-Properties-Panel) zeigte aber durchgängig `5` statt `1` — was zunächst wie ein Fehler in der eigenen Logik aussah. Der Kunde stellte über eigene Tests fest: Der Enduserdesigner lässt sich `H` gar nicht unter `5` setzen, auch nicht manuell.
+
+**Was man daraus lernt:** DevExpress hat einen intern erzwungenen Mindestwert von `5` für Höhen (`HeightF`, Properties-Panel-Feld „H"). Ein per Code/XML gesetzter kleinerer Wert (z. B. `1`) wird nicht als Fehler abgelehnt, aber beim Lesen/Rendern stillschweigend auf `5` angehoben — das ist normales, erwartetes Verhalten, kein Bug in der eigenen Logik. Bei ~0,05 mm (5 Einheiten bei üblichem DPI) ist die Differenz zum eigentlich gewünschten Minimalwert visuell vernachlässigbar.
+
+**Wie man es künftig vermeidet:** Beim Schrumpfen einer Höhe auf ein Minimum direkt `5` als Zielwert verwenden, nicht `1` oder `0` — das vermeidet die (in der Praxis geringe, aber sichtbare) Restunschärfe zwischen gesetztem und tatsächlich wirksamem Wert und erspart eine verwirrende Diagnosephase, in der ein Readback-Wert fälschlich als Fehler interpretiert wird.
+
+---
+
+## 19. Ein bandeigenes `BeforePrint` darf sich nicht auf eine erst in `PrintOnPage` gesetzte Variable stützen
+
+**Was passiert ist:** Ein neues, bandeigenes `BeforePrint` (siehe `fix-catalog.md` Muster (i)) wurde zunächst mit der Bedingung `if (!_detailPrintedSoFar) { e.Cancel = true; }` gebaut — `_detailPrintedSoFar` ist ein bereits etabliertes, funktionierendes Flag (siehe Muster (f)), allerdings wird es ausschließlich in der `PrintOnPage`-Phase einer Kontrollzelle gesetzt. Ergebnis: Auf Seite 1 verschwand der gewünschte Leerraum korrekt, aber ab diesem Zeitpunkt wurde auf GAR KEINER Seite mehr etwas gedruckt, auch nicht auf echten Folgeseiten.
+
+**Was man daraus lernt:** `_detailPrintedSoFar` wird in der `PrintOnPage`-Phase gesetzt — für ein bandeigenes `BeforePrint` auf SubBand-Ebene ist dieser Wert zum Zeitpunkt der eigenen Auswertung nicht zuverlässig verfügbar, weil `PrintOnPage` der relevanten Kind-Controls dieses Bands zu diesem Zeitpunkt im Ablauf noch gar nicht gelaufen ist — anders als bei einem `BeforePrint` direkt auf einem einzelnen, tief verschachtelten Label (dort funktioniert es nachweislich, siehe Muster (f)). Ein SubBand mit `RepeatEveryPage` trifft seine `BeforePrint`-Entscheidung offenbar in einem anderen, früheren Durchlauf als ein einzelnes Label innerhalb eines bereits platzierten Bandes.
+
+**Wie man es künftig vermeidet:** Für ein bandeigenes `BeforePrint` ausschließlich Variablen verwenden, die selbst aus einer anderen `BeforePrint`-Kette gespeist werden (z. B. ein einfacher, in `PageFooter_BeforePrint` o. ä. hochgezählter Seitenzähler wie `pageCounter`) — nicht aus `PrintOnPage`. Vor dem Einsatz einer Variable in einem neuen bandeigenen `BeforePrint` immer prüfen, in welcher Event-Phase sie gesetzt wird, nicht nur, ob sie „im Prinzip die richtige Bedeutung" hat.
+
+---
+
+## 20. Verschachtelte Controls behalten ihre eigene, unabhängig von der Elterntabelle persistierte Höhe
+
+**Was passiert ist:** Nachdem eine Tabelle erfolgreich auf eine kleine Höhe geschrumpft wurde, blieb der sichtbare Leerraum auf Seite 1 dennoch teilweise bestehen. Der Kunde stellte im Enduserdesigner fest: Ein Label innerhalb der Tabellenzelle hatte weiterhin seine eigene, alte, größere Höhe (`H=40`) — obwohl die Tabelle selbst bereits korrekt auf `H=5` stand.
+
+**Was man daraus lernt:** Ein verschachteltes Control (Label in einer Tabellenzelle) trägt seine eigene, separat persistierte Standardhöhe, unabhängig von der Höhe seines Elter-Controls. Das Schrumpfen der äußeren Tabelle/Zelle allein genügt nicht — das innere Control behält seine alte Höhe, bis diese ebenfalls explizit angepasst wird. Dieselbe Regel gilt in beide Richtungen: Auch das Wieder-Vergrößern (z. B. auf Folgeseiten) muss auf JEDER betroffenen Verschachtelungsebene einzeln passieren, nicht nur auf der äußersten.
+
+**Wie man es künftig vermeidet:** Bei jedem Höhen-Fix an einer Tabelle/einem Band IMMER auch alle direkt verschachtelten Controls (Labels, Zellen-Inhalte) auf eigene, unabhängig gesetzte Höhen prüfen — sowohl als direktes Attribut als auch im `<Localization>`-Block (siehe Eintrag 6). Ein Fix, der nur das äußerste Element behandelt, ist erfahrungsgemäß unvollständig.
+
+---
+
 ## (Platzhalter für künftige Einträge)
 
-Beim nächsten Report-Lauf, der etwas Neues zutage fördert, hier als Eintrag Nr. 14 ergänzen — gleiches Format: Was passiert ist / Was man daraus lernt / Wie man es künftig vermeidet.
+Beim nächsten Report-Lauf, der etwas Neues zutage fördert, hier als Eintrag Nr. 21 ergänzen — gleiches Format: Was passiert ist / Was man daraus lernt / Wie man es künftig vermeidet.

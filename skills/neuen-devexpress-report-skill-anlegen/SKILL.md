@@ -2,7 +2,7 @@
 name: neuen-devexpress-report-skill-anlegen
 description: Legt einen neuen work4all-DevExpress-Report-Skill (Verbesserungs-Typ wie "fix-folgeseiten-uebertrag-problem" oder Neuerstellungs-Typ wie "neuen-devexpress-listenreport-bauen") strukturiert an und liefert ihn sowohl an das Cowork-Plugin als auch an das lokale GitHub-Repo C:\GitHub\work4all-claude-skills aus. Unbedingt verwenden, wenn der Nutzer einen neuen DevExpress-Skill anlegen, erweitern oder strukturieren möchte — auch bei kurzen Trigger-Sätzen wie "create new dx skill", "neuen DX Skill erstellen", "neuen Skill anlegen", "DX Skill Bauplan", "mach daraus einen skill" (im DevExpress/Report-Kontext), oder wenn der Nutzer nach Skill-ID, Versionierung, Fix-Log oder einer einheitlichen Struktur für Report-Skills fragt.
 skill_id: DXJ0003
-version: 0.2.1
+version: 0.3.0
 ---
 
 # Neuen DevExpress-Report-Skill anlegen
@@ -109,11 +109,20 @@ Ein neuer Fach-Skill schreibt diese Mechanik **nicht erneut** in eine eigene Ref
 
 Bestehende Skills, deren eigene Referenz diese Mechanik bereits vollständig enthält (z. B. `fix-folgeseiten-uebertrag-problem/references/repx-technical-notes.md`), werden dadurch nicht automatisch geändert — der Verweis auf die zentrale Basis gilt ab v0.2.0 für neu angelegte oder inhaltlich überarbeitete Skills.
 
+### 11. Unterpunkt-IDs für Verbesserungs-Typ-Skills
+
+Vollständige Spezifikation: `references/unterpunkt-ids.md`. Kurzfassung: Jedes eigenständige Fix-Muster eines Verbesserungs-Typ-Skills bekommt zusätzlich zur Skill-ID eine eigene Unterpunkt-ID (`<Skill-ID>.<Buchstabe>`, z. B. `DXJ0001.F`). Vor Anwendung eines Fixes (erweitert Schritt „Befund melden") zeigt Claude dem Nutzer alle zutreffenden IDs mit je einem Satz Kurzbeschreibung — der Nutzer kann einzelne davon gezielt abwählen, ohne den ganzen Lauf abzusagen. Eine Abwahl wird verpflichtend im `work4all-log`-Eintrag vermerkt (Feld `<Übersprungen>`, siehe `references/fix-log-format.md` v3).
+
+Grund für diesen Baustein: Diese IDs sind die Grundlage für ein skillübergreifendes Inhaltsverzeichnis (siehe Dokumentations-Typ-Skill `skill-inhaltsverzeichnis`, `DXJ0004`), das dem Nutzer einen Gesamtüberblick über alle behobenen Einzelprobleme gibt, ohne jedes `fix-catalog.md` einzeln lesen zu müssen.
+
+**Dritter Skill-Typ ab hier:** Neben Verbesserungs- und Neuerstellungs-Typ gibt es seit `DXJ0004` einen **Dokumentations-Typ** (Beispiel: `skill-inhaltsverzeichnis`) — kein Report-Fix-Skill im eigentlichen Sinn, sondern ein Skill, der bestehendes Skill-Wissen (hier: alle Unterpunkt-IDs) für den Nutzer aufbereitet. Pflichtbausteine 1, 6, 7 und 8 gelten auch für diesen Typ; Bausteine 2 (Schritte), 3 (Sicherheitsstufen), 5 (Output-Konvention: `.repx`) und 9/10 (repx-spezifisch) sind für ihn nicht einschlägig, da er keine `.repx`-Dateien liest oder verändert.
+
 ## Versionierung dieses Meta-Skills
 
 - v0.1.0 — Erstfassung: Bauplan mit den 8 Pflichtbausteinen, Übersicht-zuerst-Regel, Skill-ID-Format `DX<Kürzel><4-stellig>`.
 - v0.2.0 — Zwei fehlende, wiederkehrend benötigte Bausteine ergänzt, damit künftige Korrektur-Skills keine bereits gelösten Probleme erneut lösen oder Regeln vergessen: Baustein 9 (Backup-Pflicht vor jeder Änderung, bisher nur Projekt-Instruction, jetzt Skill-Pflichtbaustein) und Baustein 10 (gemeinsame, themenneutrale `.repx`-Technik-Basis in `references/repx-format-basics.md`, damit Encoding-/Escaping-/Bandmodell-Wissen nicht pro Skill dupliziert wird). Baustein 4 (Validierung) verweist jetzt auf eine neue generische Basis-Checkliste (`references/validation-generic.md`), die jeder Fach-Skill um eigene Punkte ergänzt statt sie neu zu schreiben.
 - v0.2.1 — Fehlerkorrektur in `repx-format-basics.md`, Bearbeitungs-Pipeline Schritt 4.3: Zeilenenden werden jetzt explizit auf reines `\n` normalisiert, BEVOR `\n` → `&#xD;&#xA;` kodiert wird — sonst blieb bei jedem Zeilenumbruch im gesamten Skript ein rohes `\r` stehen (sichtbar als Leerzeile nach jeder Zeile, siehe `fix-folgeseiten-uebertrag-problem/references/known-issues.md` Eintrag 13). Neuer Pflicht-Validierungspunkt 12 in `references/validation-generic.md` ergänzt. Stale Verweise auf `work4all-skill-log` auf den aktuellen Blocknamen `work4all-log` korrigiert.
+- v0.3.0 — Neuer Baustein 11 (Unterpunkt-IDs für Verbesserungs-Typ-Skills, `references/unterpunkt-ids.md`): jedes eigenständige Fix-Muster bekommt eine ID (`<Skill-ID>.<Buchstabe>`), wird dem Nutzer vor Anwendung zur gezielten Abwahl gezeigt, Abwahl wird im `work4all-log` vermerkt. Dazu `fix-log-format.md` auf `(v3)` erweitert (neues Feld `<Übersprungen>`, rückwärtskompatibel zu v1/v2). Dritter Skill-Typ „Dokumentations-Typ" eingeführt (Beispiel: `skill-inhaltsverzeichnis`, `DXJ0004`) — nutzt Skill-IDs und Unterpunkt-IDs, aber keine `.repx`-spezifischen Bausteine.
 
 ## Referenzdateien im Überblick
 
@@ -122,3 +131,4 @@ Bestehende Skills, deren eigene Referenz diese Mechanik bereits vollständig ent
 - `references/ablage-und-versionierung.md` — Ablauf für die doppelte Auslieferung (Cowork-Plugin + lokales GitHub-Repo), Versionsbump-Regeln, Commit-Message-Vorlage.
 - `references/repx-format-basics.md` — themenneutrale `.repx`-Technik-Basis (Encoding, Escaping/Splice-Pipeline, Bandmodell, `Localization`-Block, bekannte generische Fallen). Pflichtlektüre vor jeder direkten Skript-/XML-Bearbeitung (Baustein 10).
 - `references/validation-generic.md` — generische Validierungs-Mindestcheckliste für jede `.repx`-Bearbeitung (Baustein 4).
+- `references/unterpunkt-ids.md` — Format, Vergabe- und Stabilitätsregeln für Unterpunkt-IDs (Baustein 11).

@@ -2,7 +2,7 @@
 name: fix-folgeseiten-uebertrag-problem
 description: Diagnostiziert und repariert die Übertrag-/Folgeseiten-Unterdrückungslogik in DevExpress-XtraReports-.repx-Dateien vom work4all-Aio-Report-Typ (und strukturell ähnlichen Varianten). Unbedingt verwenden, wenn eine .repx-Datei hochgeladen wird und der Nutzer über eine fehlende oder falsche "Übertrag"-Zeile, verschwindende Tabellenüberschriften auf Folgeseiten, falsche sumCarryoverSum-Werte, Seitenumbruch-Probleme bei Positionstabellen, oder allgemein über "Report-Bugs"/"Fehler beim Druck von Angeboten/Rechnungen" bei work4all-Reports spricht — auch wenn nicht explizit "Übertrag" oder "Folgeseite" genannt wird, aber Symptome wie "Betrag stimmt nicht", "Kopfzeile fehlt auf Seite 2", "Summe zu früh/zu spät" beschrieben werden. Auch nutzen, wenn der Nutzer nach einer allgemeinen Aufräumung/Bereinigung ("Skript-Hygiene") des eingebetteten C#-Skripts in einer .repx-Datei fragt (tote Kommentare, leere Event-Handler).
 skill_id: DXJ0001
-version: 1.1.2
+version: 1.2.0
 ---
 
 # DevExpress .repx — Übertrag/Folgeseiten-Fix & Skript-Hygiene
@@ -25,6 +25,7 @@ Kurzfassung der Fixes, die aus dem ersten vollständig durchgefixten Report (`dx
 6. **Skript-Hygiene (optional)** — entfernt leere/wirkungslose Print-Event-Handler und rein auskommentierten toten Code, symmetrisch inkl. der zugehörigen XML-Verdrahtung, ohne wertvolle Begründungs-Kommentare zu verlieren (Muster e, nur auf ausdrücklichen Wunsch).
 7. **Visuelle Fallstricke** — z.B. zu wenig Abstand zwischen Positionen/Titeln nach dem Entfernen einer Leerzeile: löst sich über `Padding`/Mindesthöhe der Tabellenzeile, nicht über das Zurückbringen der Leerzeile.
 8. **Mindesthöhen statt `KeepTogether` gegen Weißraum/abgeschnittene Übertrag-Anzeige** — ersetzt den in Punkt 2 beschriebenen, überholten `KeepTogether`-Ansatz. `KeepTogether` wird auf Zeile/Band wieder auf `false` zurückgesetzt; stattdessen werden `tb_ÜbertragOben` und das umgebende Subband auf eine Mindesthöhe von 50 gebracht (bereits höhere Werte bleiben unangetastet) und eine ggf. vorhandene doppelte Kopfzeile in `xrTable1` entfernt (verbleibende Datenzeile auf Höhe 55). Wichtig: die Höhe kann zusätzlich indirekt im `<Localization>`-Block gespeichert sein, nicht nur als direktes Attribut — siehe `repx-technical-notes.md`, Abschnitt „Der `<Localization>`-Block" (Muster g, siehe auch `known-issues.md` Einträge 6 und 7).
+9. **Seite-1-Leerraum bei unterdrückten Subbändern beheben** — ein Subband kann inhaltlich korrekt unterdrückt sein (kein sichtbarer Text/Inhalt auf Seite 1) und trotzdem seinen vollen Platz reservieren. Vier Teilursachen zusammen beheben: bandeigenes `BeforePrint` statt reiner `PrintOnPage`-Logik (feuert zu spät für die Platzreservierung), `CanGrow` statisch statt dynamisch, verschachtelte Controls eigenständig mitschrumpfen, Band-Standardhöhe über den `<Localization>`-Block statt über ein wirkungsloses direktes Attribut setzen (Muster i, siehe auch `known-issues.md` Einträge 16–20).
 
 **Referenzbeispiel (PFLICHT vor jedem inhaltlichen Fix):** Für diese Methodik existiert ein vollständig durchgefixter, vom Kunden in DevExpress getesteter und bestätigter Referenzreport (die jeweils aktuellste vom Kunden bestätigte Referenzversion) — ein Proof-of-Concept mit allen oben genannten Fixes bereits angewendet (Stand aktuellste Referenzversion: Muster (b) durch das höhenbasierte Muster (g) ersetzt, siehe Punkt 8). Diese Datei wird aus Vertraulichkeitsgründen nicht mit dieser Skill ausgeliefert und liegt nicht in diesem Repository.
 
@@ -36,9 +37,25 @@ Bevor irgendein inhaltlicher Fix (alles außer reiner Skript-Hygiene, Muster (e)
 
 ## Skill-ID, Version & Fix-Log
 
-Diese Skill trägt die ID **DXJ0001** (aktuell Version **1.1.2**). Format und vollständige Spezifikation des `work4all-log`-Blocks (inkl. `<Ergebnis>`-Feld, Idempotenz-Check, Rückwärtskompatibilität zu einem älteren `(v1)`-Block) sind zentral dokumentiert in `work4all-reporting-skills:neuen-devexpress-report-skill-anlegen`, `references/fix-log-format.md` — dort auch die vollständige Registry aller vergebenen IDs (`references/skill-id-registry.md`). Wann und wie diese Skill den Block liest und beschreibt: siehe Schritt 7 „Log-Eintrag schreiben" im Arbeitsablauf unten.
+Diese Skill trägt die ID **DXJ0001** (aktuell Version **1.2.0**). Format und vollständige Spezifikation des `work4all-log`-Blocks (inkl. `<Ergebnis>`-Feld, `<Übersprungen>`-Feld seit `(v3)`, Idempotenz-Check, Rückwärtskompatibilität zu älteren `(v1)`/`(v2)`-Blöcken) sind zentral dokumentiert in `work4all-reporting-skills:neuen-devexpress-report-skill-anlegen`, `references/fix-log-format.md` — dort auch die vollständige Registry aller vergebenen IDs (`references/skill-id-registry.md`). Wann und wie diese Skill den Block liest und beschreibt: siehe Schritt 7 „Log-Eintrag schreiben" im Arbeitsablauf unten.
 
 **Wichtig für Schritt 5 (Skript-Hygiene):** Der `work4all-log`-Block sieht wie ein Kommentarblock aus, ist aber KEIN toter Kommentar — er darf von der Hygiene-Routine niemals entfernt werden, auch nicht als vermeintlich "wirkungsloser" Kommentar. Vor jeder Hygiene-Passage explizit prüfen, dass der Block (erkennbar an der festen Marker-Zeile `=== work4all-log`) unangetastet bleibt.
+
+## Unterpunkt-IDs
+
+Seit v1.2.0 (Meta-Skill-Baustein 11, siehe `unterpunkt-ids.md` in `neuen-devexpress-report-skill-anlegen`) trägt jedes Muster in `fix-catalog.md` eine eigene Unterpunkt-ID. Übersicht:
+
+| ID | Kurzbeschreibung | Muster |
+|----|----|----|
+| `DXJ0001.A` | Fehlende Summe/Übertrag auf vorgelagerten Seiten abgefangen (Gesamtsummen-Rückfall + Detailbereich-Gate) | (c) + (f) |
+| `DXJ0001.B` | Folgeseitenproblem: sabotierte `BeforePrint`-Logik entfernt, damit die Titelzeile auf Folgeseiten wieder erscheint | (a) |
+| `DXJ0001.C` | Skript aufgeräumt (leere Handler, toter Code, work4all-interne Parameter, ungenutzte Bänder/Debug-Ausgaben, gekürzte Kommentare) | (e) |
+| `DXJ0001.E` | Leerzeile durch `AllowMarkupText` behoben, inkl. Folge-Padding vor der nächsten Zeile | (h) |
+| `DXJ0001.F` | Seite-1-Leerraum bei unterdrückten Übertrag-/Folgeseiten-Sektionen behoben | (i) |
+| `DXJ0001.G` | Mindesthöhen statt `KeepTogether` gegen Weißraum/abgeschnittene Übertrag-Anzeige | (g) — ersetzt (b) |
+| `DXJ0001.H` | Batch-Sicherheits-Reset bei Sammeldruck | (d) |
+
+`DXJ0001.D` ist bewusst kein Fix-Muster, sondern steht für den `work4all-log`-Mechanismus selbst (Schritt 7) — er erscheint im Inhaltsverzeichnis-Skill (`DXJ0004`), hat aber keinen eigenen Katalog-Eintrag. Details je ID: siehe die jeweilige Überschrift in `references/fix-catalog.md`.
 
 ## Bekannte Grenzen
 
@@ -70,6 +87,8 @@ Prüfe außerdem gegen `references/known-issues.md` — dort sammeln sich Fallen
 
 Fasse zusammen, was gefunden wurde, gruppiert nach Sicherheitsstufe. Auch bei eindeutigen Fällen: kurz benennen, was verändert wird und warum, bevor du loslegst — der Nutzer soll nachvollziehen können, was passiert, auch wenn er nicht bei jedem Einzelpunkt gefragt wird. Wurde ohne Referenzdatei gearbeitet (siehe Ausnahme-Regel im Abschnitt „Referenzbeispiel"), weise an dieser Stelle explizit auf das dadurch geringere Vertrauensniveau hin.
 
+**Unterpunkt-ID-Vorschau (Pflicht, seit v1.2.0/Meta-Skill-Baustein 11):** Liste zusätzlich alle zutreffenden Unterpunkt-IDs (siehe Abschnitt „Unterpunkt-IDs" oben) im Format `<ID>: <ein Satz Kurzbeschreibung>` auf — nur die tatsächlich zutreffenden, keine vollständige Liste aller möglichen IDs. Der Nutzer kann daraufhin einzelne IDs gezielt abwählen, bevor Schritt 4 beginnt. Ohne Rückmeldung gilt: alle aufgeführten IDs werden gemäß ihrer Sicherheitsstufe behandelt (siehe Schritt 4). Jede abgewählte ID wird in Schritt 7 im `work4all-log` vermerkt — siehe `references/unterpunkt-ids.md`.
+
 ### Schritt 4 — Fixes anwenden
 
 - **Automatisch sicher**: direkt umsetzen, ohne extra nachzufragen.
@@ -78,11 +97,18 @@ Fasse zusammen, was gefunden wurde, gruppiert nach Sicherheitsstufe. Auch bei ei
 
 Halte dich bei jeder Skript-Änderung an die Bearbeitungs-Pipeline aus `references/repx-technical-notes.md` (insbesondere die exakte Reihenfolge beim Re-Escaping und die eindeutigen Grenzmarkierungen beim Zurücksplicen) — ein falsch reihenfolgtes Escaping oder ein falscher Splice-Punkt erzeugt eine Datei, die zwar wohlgeformtes XML sein kann, aber in DevExpress nicht mehr lädt oder falsch layoutet.
 
-### Schritt 5 — Optionale Skript-Hygiene
+### Schritt 5 — Skript-Hygiene (`DXJ0001.C`, Pflicht seit 28.08.)
 
-Nur durchführen, wenn der Nutzer das für diesen Lauf ausdrücklich wünscht (entweder direkt gefragt, oder weil er es explizit zusammen mit dem eigentlichen Fix beauftragt hat) — es ist reine Kosmetik ohne funktionale Wirkung und verdient eine eigene bewusste Entscheidung, kein automatischer Nebeneffekt jedes Laufs.
+Trotz der Überschrift kein optionaler Schritt mehr: PFLICHT-Bestandteil jedes Fix-Laufs (siehe `references/fix-catalog.md` Muster (e), Automatisierungssicherheit) — kann aber über die ID-Vorschau in Schritt 3 vom Nutzer gezielt abgewählt werden, falls er sie für diesen Lauf nicht wünscht (dann Vermerk im `work4all-log`, siehe Schritt 7).
 
-Wenn gewünscht: entferne leere/wirkungslose Print-Event-Handler und rein auskommentierte tote Codepassagen nach den Regeln in Muster (e) von `references/fix-catalog.md`. Kurzfassung der wichtigsten Regel dabei: bei Geschwister-Events am selben Element (z.B. `OnBeforePrint` mit echter Logik neben leerem `OnAfterPrint`) nur die leere Verdrahtung entfernen, die mit Logik behalten — und Begründungs-Kommentare, die eine Architekturentscheidung dokumentieren, nicht ersatzlos löschen, sondern knapp erhalten oder zum nächstgelegenen aktiven Handler verschieben.
+Entferne leere/wirkungslose Print-Event-Handler und rein auskommentierte tote Codepassagen nach den Regeln in Muster (e) von `references/fix-catalog.md`. Kurzfassung der wichtigsten Regel dabei: bei Geschwister-Events am selben Element (z.B. `OnBeforePrint` mit echter Logik neben leerem `OnAfterPrint`) nur die leere Verdrahtung entfernen, die mit Logik behalten — und Begründungs-Kommentare, die eine Architekturentscheidung dokumentieren, nicht ersatzlos löschen, sondern knapp erhalten oder zum nächstgelegenen aktiven Handler verschieben.
+
+Seit v1.2.0 gehören zusätzlich vier konkrete, bestätigte Bereinigungsfälle dazu (volle Beschreibung inkl. Automatisierungssicherheit: `references/fix-catalog.md`, Muster (e), Abschnitt „Erweiterte, konkrete Bereinigungsfälle"):
+
+- work4all-interne Sonderparameter ohne fachlichen Bezug zum Kundenreport entfernen (Beispiel: `Lizenz`, `ArtikelServerHosting`).
+- Ein reiner Seite-1-Abstands-Band ohne jede Wirkung entfernen — nur wenn Standardhöhe `0` UND `HeightF` nirgends im Skript erhöht wird (Beispiel: `Sub_AbstandSeite1`).
+- Reine Debug-String-Ausgaben ohne produktiven Zweck entfernen (Beispiel: `_dbgHelper`-artige Felder, die kein sichtbares Control liest).
+- Lange Fließtext-Kommentare auf das Wesentliche kürzen (stichpunktartig, Kernaussage erhalten) — außer dem `work4all-log`-Block selbst, der nie gekürzt/entfernt wird.
 
 ### Schritt 6 — Validierung
 
@@ -97,8 +123,9 @@ Schreibe **unabhängig vom Ergebnis** eine Zeile in den `work4all-log`-Block im 
 - Vor dem Schreiben: Idempotenz-Check aus `fix-log-format.md` Regel 2 durchführen (nur relevant, wenn im Block bereits eine `geändert`-Zeile dieser Skill-ID mit ≥ aktueller Version steht).
 - Wurden in Schritt 4 Fixes tatsächlich angewendet: Ergebnis `geändert`.
 - Wurde die Diagnose vollständig durchlaufen, aber kein Muster traf zu (siehe Hinweis in Schritt 2): Ergebnis `keine Änderung nötig`. Das gilt auch, wenn ausschließlich Skript-Hygiene lief oder ausschließlich "Nur Verdacht"-Funde dokumentiert wurden, ohne dass eine Datei-Anpassung vorgenommen wurde.
-- Existiert noch kein Block (erstmaliger Lauf dieser Skill-Familie auf dieser Datei), lege Kopf- und Fußzeile im `(v2)`-Format neu an.
-- Falls die Datei bereits einen `(v1)`-Block hat: neue Zeile im v2-Format anhängen und Kopfzeile auf `(v2)` anheben (siehe `fix-log-format.md`).
+- Hat der Nutzer in Schritt 3 eine oder mehrere zutreffende Unterpunkt-IDs abgewählt: zusätzlich das Feld `<Übersprungen>` mit der Komma-Liste der abgewählten IDs anhängen (z.B. `Übersprungen: DXJ0001.C`) — unabhängig davon, ob das Gesamtergebnis `geändert` oder `keine Änderung nötig` ist.
+- Existiert noch kein Block (erstmaliger Lauf dieser Skill-Familie auf dieser Datei), lege Kopf- und Fußzeile im `(v3)`-Format neu an.
+- Falls die Datei bereits einen `(v1)`- oder `(v2)`-Block hat: neue Zeile im v3-Format anhängen und Kopfzeile auf `(v3)` anheben (siehe `fix-log-format.md`).
 
 ### Schritt 8 — Auslieferung
 
@@ -120,7 +147,8 @@ Wenn in diesem Lauf ein neues Muster, eine neue Falle oder eine überraschende D
 - `references/fix-catalog.md` — die bekannten Problem-Muster, ihre Ursache, der empfohlene Fix, und wie sicher es ist, ihn automatisch anzuwenden.
 - `references/validation-checklist.md` — die Checks, die vor jeder Auslieferung durchlaufen werden müssen.
 - `references/known-issues.md` — lebendes Dokument bekannter Fallen und Überraschungen, wächst mit jedem Lauf.
-- `references/fix-log-format.md` (in `neuen-devexpress-report-skill-anlegen`) — Spezifikation des `work4all-log`-Blocks inkl. Ergebnis-Werten (`geändert` / `keine Änderung nötig` / `abgebrochen: ...`) und der vollständigen Skill-ID-Registry, maßgeblich für Schritt 7.
+- `references/fix-log-format.md` (in `neuen-devexpress-report-skill-anlegen`) — Spezifikation des `work4all-log`-Blocks inkl. Ergebnis-Werten (`geändert` / `keine Änderung nötig` / `abgebrochen: ...`), `<Übersprungen>`-Feld und der vollständigen Skill-ID-Registry, maßgeblich für Schritt 7.
+- `references/unterpunkt-ids.md` (in `neuen-devexpress-report-skill-anlegen`) — Format- und Vergaberegeln für Unterpunkt-IDs, maßgeblich für Schritt 3.
 
 ## Versionierung dieses Skills
 
@@ -128,3 +156,5 @@ Wenn in diesem Lauf ein neues Muster, eine neue Falle oder eine überraschende D
 - v1.1.0 — Neuer Schritt 7 „Log-Eintrag schreiben" ergänzt: schreibt jetzt bei jedem abgeschlossenen Lauf einen Eintrag im `work4all-skill-log`-Block, auch ohne Änderung (`keine Änderung nötig`), gemäß `fix-log-format.md` v2. Schritt 8 „Auslieferung" um einen verpflichtenden Statusbericht zu nicht ausgeführten Teilen ergänzt. Schritt 1 und 2 um explizite Abbruch- bzw. Notwendigkeits-Klarstellung ergänzt. Abschnitt „Skill-ID, Version & Fix-Log" auf das neue `(v2)`-Log-Format samt `<Ergebnis>`-Feld aktualisiert und auf Schritt 7 verweisend gekürzt (statt Detail-Duplikat).
 - v1.1.1 — Dokumentationskorrektur: Log-Block in `work4all-log` umbenannt (vorher `work4all-skill-log`), Versionskennzeichnung `(v2)` in der Kopfzeile bleibt erhalten. Zeitstempel-Vorgabe in `fix-log-format.md` korrigiert: kein UTC-Offset (`+02:00`) mehr im Zeitstempel-Feld — nur noch die lokale Wanduhrzeit Europe/Berlin ohne Offset-Suffix. Alle Verweise auf den Blocknamen in dieser Datei entsprechend angepasst.
 - v1.1.2 — Fehlerkorrektur in `repx-technical-notes.md` Schritt 4.3 (Bearbeitungs-Pipeline): Zeilenenden werden jetzt explizit auf reines `\n` normalisiert, BEVOR die finale Kodierung `\n` → `&#xD;&#xA;` erfolgt. Ohne diesen Schritt blieb bei jedem Zeilenumbruch im gesamten Skript ein rohes `\r` vor dem neu kodierten `&#xD;&#xA;` stehen, sichtbar als Leerzeile nach jeder Zeile im Designer/Editor (siehe `known-issues.md` Eintrag 13). Neuer Validierungspunkt 12 in `validation-checklist.md` ergänzt (keine rohen `\r`/`\n` im re-escapten `ScriptsSource`-Wert).
+- v1.1.3 — Neues, vom Kunden per Testdruck bestätigtes Muster (h) in `fix-catalog.md` ergänzt: `AllowMarkupText="true"` auf einer wachsenden mehrzeiligen Zelle ohne tatsächlichen Markup-Bedarf kann eine textlängen-abhängige (nicht seitenumbruch-abhängige) zusätzliche Leerzeile erzeugen; Folge-Fix erhöht ggf. das Top-Padding der unmittelbar nachfolgenden SubBand-Zeile. Details und Diagnose-Historie in `known-issues.md` Einträge 14 und 15.
+- v1.2.0 — Neues, vom Kunden über eine lange iterative Diagnose-Reihe bestätigtes Muster (i) in `fix-catalog.md` ergänzt: Seite-1-Leerraum bei inhaltlich korrekt unterdrückten Subbändern (vier zusammenwirkende Teilursachen: fehlendes bandeigenes `BeforePrint`, dynamisches statt statisches `CanGrow`, unabhängig persistierte Höhen verschachtelter Controls, wirkungsloses direktes `HeightF`-Attribut auf Bandebene statt `<Localization>`-Eintrag). Details und widerlegte Zwischenhypothesen in `known-issues.md` Einträge 16–20. Neuer Abschnitt „Unterpunkt-IDs" (Meta-Skill-Baustein 11, `DXJ0001.A`–`H`): jedes Muster bekommt eine eigene ID, Schritt 3 zeigt zutreffende IDs zur gezielten Abwahl, Schritt 7 protokolliert eine Abwahl im `work4all-log` (jetzt `(v3)`-Format). Muster (e) (Skript-Hygiene, Schritt 5) um vier konkrete, bestätigte Bereinigungsfälle erweitert: work4all-interne Sonderparameter, ein wirkungsloses reines Seite-1-Abstands-Band, reine Debug-String-Ausgaben, Kommentare kürzen statt löschen. Nebenbei Inkonsistenz in Schritt 5 korrigiert: die Überschrift „Optionale Skript-Hygiene" stand im Widerspruch zu `fix-catalog.md`, wo Muster (e) bereits seit 28.08. als PFLICHT-Bestandteil jedes Laufs eingestuft ist — Schritt 5 jetzt entsprechend als Pflicht (mit gezielter Abwahlmöglichkeit über die neue Unterpunkt-ID-Vorschau) formuliert.

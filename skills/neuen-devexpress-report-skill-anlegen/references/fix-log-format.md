@@ -5,12 +5,12 @@ Diese Datei ist die verbindliche Spezifikation für den Log-Block, den jeder **V
 ## Blockformat
 
 ```
-// === work4all-log (v2) ===
-// <SkillID> | v<Version> | <Zeitstempel> | <Skill-Name> | <Ergebnis>
+// === work4all-log (v3) ===
+// <SkillID> | v<Version> | <Zeitstempel> | <Skill-Name> | <Ergebnis> | <Übersprungen>
 // === end work4all-log ===
 ```
 
-- `(v2)` in der Kopfzeile ist die Versionsnummer des Log-**Formats** selbst (nicht des Skills!) — falls das Format sich später ändert, wird hier hochgezählt und alte Blöcke bleiben lesbar. **Seit v2 gibt es das 5. Feld `<Ergebnis>`** (siehe unten) — Grund: v1 kannte nur den Fall "Fix wurde angewendet" und ließ offen, ob ein Skill lief, aber nichts zu tun fand. Das machte es unmöglich, zwischen "Skill wurde nie auf diese Datei angewendet" und "Skill wurde angewendet, fand aber keinen Änderungsbedarf" zu unterscheiden — genau das soll dieser Block eigentlich belegen können.
+- `(v3)` in der Kopfzeile ist die Versionsnummer des Log-**Formats** selbst (nicht des Skills!) — falls das Format sich später ändert, wird hier hochgezählt und alte Blöcke bleiben lesbar. **Seit v2 gibt es das 5. Feld `<Ergebnis>`** (siehe unten) — Grund: v1 kannte nur den Fall "Fix wurde angewendet" und ließ offen, ob ein Skill lief, aber nichts zu tun fand. Das machte es unmöglich, zwischen "Skill wurde nie auf diese Datei angewendet" und "Skill wurde angewendet, fand aber keinen Änderungsbedarf" zu unterscheiden. **Seit v3 gibt es zusätzlich das 6. Feld `<Übersprungen>`** (siehe unten, gehört zu Meta-Skill-Baustein 11 „Unterpunkt-IDs") — Grund: ohne dieses Feld war nicht sichtbar, ob ein bekanntes Fix-Muster bewusst vom Nutzer abgewählt wurde, oder ob es schlicht nicht zutraf/übersehen wurde.
 - Pro **abgeschlossener** Anwendung eines Skills genau eine Zeile (was "abgeschlossen" heißt, siehe Regel 7 unten). Mehrere Anwendungen (auch desselben Skills in unterschiedlichen Versionen, oder mehrerer verschiedener Fix-Skills) stehen als mehrere Zeilen **zwischen** der Kopf- und der Fußzeile, in der Reihenfolge ihrer Anwendung (älteste zuerst).
 - `<SkillID>`: Format `DX<Kürzel><4-stellig>`, siehe `skill-id-registry.md`.
 - `<Version>`: die Skill-Version zum Zeitpunkt der Anwendung (semver), nicht die Log-Format-Version.
@@ -20,17 +20,19 @@ Diese Datei ist die verbindliche Spezifikation für den Log-Block, den jeder **V
   - **`geändert`** — mindestens eine Anpassung an der Datei wurde vorgenommen.
   - **`keine Änderung nötig`** — der Skill wurde vollständig durchlaufen (Diagnose/Prüfung abgeschlossen), es gab aber nichts zu beheben bzw. anzupassen.
   - **`abgebrochen: <Kurzgrund>`** — die inhaltliche Diagnose hat bereits begonnen, der Lauf konnte aber nicht zu Ende geführt werden (siehe Regel 7 für die genaue Abgrenzung, wann das überhaupt geloggt wird). `<Kurzgrund>` ist wenige Worte, z.B. `abgebrochen: Rückfrage unbeantwortet` oder `abgebrochen: Struktur weicht zu stark ab`.
+- `<Übersprungen>` (seit v3, Feld 6): Komma-getrennte Liste der Unterpunkt-IDs (siehe `references/unterpunkt-ids.md`), die zwar zutrafen, aber auf ausdrücklichen Wunsch des Nutzers NICHT angewendet wurden — z.B. `Übersprungen: DXJ0001.C, DXJ0001.H`. Traf kein zutreffendes Muster zu oder wurde nichts abgewählt: Feld weglassen (nicht `Übersprungen: -` oder leer schreiben — ein fehlendes 6. Feld ist gleichbedeutend mit "nichts abgewählt", siehe Rückwärtskompatibilität unten).
 
-## Beispiel (mehrere Anwendungen, gemischte Ergebnisse)
+## Beispiel (mehrere Anwendungen, gemischte Ergebnisse, eine mit Abwahl)
 
 ```
-// === work4all-log (v2) ===
+// === work4all-log (v3) ===
 // DXJ0001 | v1.0.0 | 2026-08-28T16:03:11 | fix-folgeseiten-uebertrag-problem | geändert
 // DXJ0001 | v1.1.0 | 2026-09-12T09:47:52 | fix-folgeseiten-uebertrag-problem | keine Änderung nötig
+// DXJ0001 | v1.2.0 | 2026-09-20T11:15:40 | fix-folgeseiten-uebertrag-problem | geändert | Übersprungen: DXJ0001.C
 // === end work4all-log ===
 ```
 
-**Rückwärtskompatibilität zu v1:** Bestehende v1-Zeilen (ohne 5. Feld) werden nicht nachträglich umgeschrieben — sie bleiben stehen, genau wie sie sind (Regel 1, Append-only, gilt uneingeschränkt auch für das Format-Upgrade). Eine v1-Zeile ohne `<Ergebnis>` wird beim Lesen als `geändert` interpretiert, da das v1-Format ausschließlich für tatsächliche Fixes vorgesehen war. Trifft ein Skill auf einen bestehenden Block mit `(v1)`-Kopfzeile, hängt er seine neue Zeile im v2-Format (mit `<Ergebnis>`) an **und hebt dabei die Kopfzeile auf `(v2)`** — die Kopfzeile beschreibt damit immer das höchste in diesem Block verwendete Format, ein Block kann also unten alte v1-Zeilen und weiter unten neuere v2-Zeilen enthalten. Das ist beabsichtigt, kein Fehler.
+**Rückwärtskompatibilität zu v1/v2:** Bestehende v1-Zeilen (ohne 5. Feld) und v2-Zeilen (ohne 6. Feld) werden nicht nachträglich umgeschrieben — sie bleiben stehen, genau wie sie sind (Regel 1, Append-only, gilt uneingeschränkt auch für jedes Format-Upgrade). Eine v1-Zeile ohne `<Ergebnis>` wird beim Lesen als `geändert` interpretiert. Eine v2-Zeile ohne `<Übersprungen>` wird beim Lesen als "nichts abgewählt" interpretiert (nicht als "unbekannt"), da v2 noch keine Unterpunkt-IDs kannte. Trifft ein Skill auf einen bestehenden Block mit `(v1)`- oder `(v2)`-Kopfzeile, hängt er seine neue Zeile im jeweils aktuellen Format an **und hebt dabei die Kopfzeile auf das höchste im Block verwendete Format** (aktuell `(v3)`) — die Kopfzeile beschreibt damit immer das höchste verwendete Format, ein Block kann also unten alte v1-/v2-Zeilen und weiter unten neuere v3-Zeilen enthalten. Das ist beabsichtigt, kein Fehler.
 
 ## Regeln
 
@@ -50,5 +52,6 @@ Diese Datei ist die verbindliche Spezifikation für den Log-Block, den jeder **V
 - Kompakt genug, um den Skriptcode nicht spürbar aufzublähen (3+n Zeilen reiner Kommentar).
 - Lesbar ohne Tool: Jens kann die Datei in DevExpress-Designer öffnen, den Skriptteil ansehen und sofort erkennen, was wann gemacht wurde.
 - Maschinell auswertbar: ein einfaches Regex-Muster genügt, um den Block programmatisch zu parsen — nützlich, falls später ein Skill den Verlauf automatisiert auswerten soll:
-  - v2-Zeilen (mit Ergebnis): `^// (DX[A-Z]\d{4}) \| v([\d.]+) \| (\S+) \| ([^|]+) \| (.+)$`
-  - v1-Zeilen (ohne Ergebnis, Altbestand): `^// (DX[A-Z]\d{4}) \| v([\d.]+) \| (\S+) \| (.+)$` — matcht eine v1-Zeile aber auch fälschlich als v2-Zeile mit dem Skill-Namen im Ergebnis-Feld; ein Parser muss daher zuerst auf das v2-Muster prüfen und nur bei Nichttreffer auf das v1-Muster zurückfallen, nicht umgekehrt.
+  - v3-Zeilen (mit Ergebnis + optional Übersprungen): `^// (DX[A-Z]\d{4}) \| v([\d.]+) \| (\S+) \| ([^|]+) \| ([^|]+?)(?: \| Übersprungen: (.+))?$`
+  - v2-Zeilen (mit Ergebnis, kein Übersprungen-Feld): `^// (DX[A-Z]\d{4}) \| v([\d.]+) \| (\S+) \| ([^|]+) \| (.+)$`
+  - v1-Zeilen (ohne Ergebnis, Altbestand): `^// (DX[A-Z]\d{4}) \| v([\d.]+) \| (\S+) \| (.+)$` — matcht eine v1-Zeile aber auch fälschlich als v2-/v3-Zeile mit dem Skill-Namen im Ergebnis-Feld; ein Parser muss daher zuerst auf das v3-Muster, dann auf das v2-Muster prüfen und nur bei beidem Nichttreffer auf das v1-Muster zurückfallen, nicht umgekehrt.
