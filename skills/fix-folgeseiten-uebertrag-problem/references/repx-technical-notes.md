@@ -6,6 +6,8 @@ Eine `.repx`-Datei ist XML, UTF-8 mit BOM (Byte Order Mark), mit CRLF (`\r\n`) a
 
 **Verschachtelte Subreports haben eigene ScriptsSource-Attribute.** Ein Hauptreport kann `DetailReport`-Elemente enthalten (z.B. `DetailReport_SLKomponenten`, `DetailReport_Staffelpreise`, `Sub_Teilrechnungslogik_AN_AB`), die jeweils ihr eigenes, unabhängiges `ScriptsSource`-Attribut mit eigenem Methoden-Namensraum haben. Beim Prüfen, ob eine Methode "fehlt", immer zuerst feststellen, zu welchem `ScriptsSource`-Block eine `<Scripts>`-Referenz gehört — sonst produzierst du Fehlalarme.
 
+**Ein `ScriptsSource`, der nur aus Kommentaren besteht, überlebt einen Designer-Speichervorgang nicht.** Der Designer kompiliert `ScriptsSource` offenbar beim Laden/Speichern; ein reiner Kommentarblock kompiliert zu leerem Code und wird beim Re-Serialisieren als "kein Skript vorhanden" behandelt — das ganze Attribut verschwindet dann, nicht nur sein Inhalt. Das betrifft konkret den `work4all-log`-Block: siehe `known-issues.md` Eintrag 21 und `neuen-devexpress-report-skill-anlegen/references/fix-log-format.md`, Abschnitt „Überlebensfähigkeit bei einem Designer-Speichervorgang" (Anker-Zeile als Mitigation, noch nicht per echtem Designer-Round-Trip verifiziert).
+
 ## Sichere Bearbeitungs-Pipeline (Python)
 
 1. Datei öffnen mit `encoding='utf-8-sig', newline=''` — das entfernt die BOM beim Lesen, lässt aber die CRLF-Sequenzen exakt im String stehen (kein automatisches Newline-Mapping). Das ist wichtig: mit Standard-Textmodus wird `\r\n` beim Lesen still zu `\n` normalisiert, wodurch jedes literale `\r\n`-Suchmuster stillschweigend nicht mehr matcht — ein Fehler, der leicht unbemerkt bleibt, weil kein Python-Fehler geworfen wird, nur 0 Treffer.

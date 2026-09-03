@@ -2,7 +2,7 @@
 name: neuen-devexpress-listenreport-bauen
 description: Baut aus einem Mockup (PDF/Bild) und einer bestehenden work4all-DevExpress-.repx-Vorlage einen neuen DevExpress-Listenreport (z.B. Kundenliste, Lieferantenliste, Artikelliste). Erstellt zuerst eine Excel-Feldzuordnungstabelle zur Abstimmung mit dem Fachbereich, übernimmt danach Joins/Query aus einer SQL- oder Crystal-Reports-Query in eine neue DevExpress-SqlDataSource und baut die neue .repx mit demselben Parameter-/ID-Filtermuster wie die Vorlage. Verwenden, wenn der Nutzer einen neuen work4all-Listenreport auf Basis eines Reports/Mockups bauen will, eine Excel-Feldzuordnung erstellen will, eine alte SQL-/Crystal-Reports-Query übernehmen möchte, oder "Report-Bauplan", "Feldzuordnung" oder "neuen Listenreport" erwähnt — auch ohne die Wörter "Skill" oder "DevExpress", z.B. "ich habe ein Mockup für einen neuen Report", "welche Felder kommen aus welcher Tabelle", "ich gebe dir die SQL von einem alten Report, bau das ein".
 skill_id: DXJ0002
-version: 1.1.1
+version: 1.2.0
 ---
 
 # Neuen DevExpress-Listenreport aus Mockup + Vorlage bauen
@@ -79,14 +79,15 @@ Liefere aus:
 
 ## Skill-ID, Version & Fix-Log-Startpunkt
 
-Diese Skill trägt die ID **DXJ0002** (aktuell Version **1.1.1**). Format und vollständige Registry sind zentral dokumentiert in `work4all-reporting-skills:neuen-devexpress-report-skill-anlegen`, `references/fix-log-format.md` und `references/skill-id-registry.md`.
+Diese Skill trägt die ID **DXJ0002** (aktuell Version **1.2.0**). Format und vollständige Registry sind zentral dokumentiert in `work4all-reporting-skills:neuen-devexpress-report-skill-anlegen`, `references/fix-log-format.md` und `references/skill-id-registry.md`.
 
-Jede neu gebaute `.repx` bekommt in Schritt 4 (Layout bauen) ganz oben im eingebetteten Skript einen initialen Log-Block im aktuellen Format `(v2)`, der die Herkunft der Datei dokumentiert — damit spätere Fix-Skills (z.B. `fix-folgeseiten-uebertrag-problem`) wissen, dass diese Datei maschinell von dieser Skill erzeugt wurde, mit welcher Version, wann und mit welchem Ergebnis:
+Jede neu gebaute `.repx` bekommt in Schritt 4 (Layout bauen) ganz oben im eingebetteten Skript einen initialen Log-Block im aktuellen Format `(v2)`, der die Herkunft der Datei dokumentiert — damit spätere Fix-Skills (z.B. `fix-folgeseiten-uebertrag-problem`) wissen, dass diese Datei maschinell von dieser Skill erzeugt wurde, mit welcher Version, wann und mit welchem Ergebnis. **Seit v1.2.0 gehört die Anker-Zeile direkt danach zwingend dazu** (siehe `fix-log-format.md`, Abschnitt „Überlebensfähigkeit bei einem Designer-Speichervorgang") — ohne sie kann ein ScriptsSource-Block, der nur aus Kommentaren besteht, beim ersten Speichern im DevExpress Report Designer restlos verschwinden:
 
 ```
 // === work4all-log (v2) ===
 // DXJ0002 | v1.1.0 | 2026-08-28T15:10:00 | neuen-devexpress-listenreport-bauen | geändert
 // === end work4all-log ===
+private static readonly string _work4allLogAnchor = "keep-scriptssource-alive";
 ```
 
 Beim Erstbau ist das Ergebnis immer `geändert` (es wird ja eine neue Datei erzeugt). Wird diese Skill **erneut** auf einen bereits von ihr gebauten Report angewendet — z.B. ein Korrekturlauf, nachdem der Fachbereich Rückmeldung zur Feldzuordnung gegeben hat — gilt dieselbe Ergebnis-Konvention wie bei Verbesserungs-Skills: `geändert`, wenn tatsächlich etwas am Layout/an der Query angepasst wurde, `keine Änderung nötig`, wenn die Prüfung ergab, dass alles bereits passt. Vollständige Regeln inkl. Idempotenz-Check: `references/fix-log-format.md`.
@@ -105,3 +106,4 @@ Zeitstempel immer mit Zeitzone Europe/Berlin erzeugen (`TZ=Europe/Berlin date '+
 - v1.0.0 — Erstfassung (Registry-Eintrag `DXJ0002`, 2026-08-28): Bauplan-Excel, SQL/Join-Übernahme, Parametermuster, Layout-Bau, Validierung, Auslieferung mit initialem Log-Block.
 - v1.1.0 — Neuer Abschnitt "Kritische Prüfung statt Automatismus" ergänzt. Schritt 6 um verpflichtenden Statusbericht zu nicht ausgeführten Teilen erweitert. Log-Startpunkt auf Format `(v2)` inkl. Ergebnis-Feld gehoben; Ergebnis-Konvention für spätere Korrekturläufe auf bereits gebaute Reports ergänzt.
 - v1.1.1 — Dokumentationskorrektur: Log-Block in `work4all-log` umbenannt (vorher `work4all-skill-log`), Versionskennzeichnung `(v2)` bleibt erhalten. Beispiel-Log-Zeile und Zeitstempel-Erzeugungsbefehl korrigiert: kein UTC-Offset (`+02:00`/`%z`) mehr, nur noch die lokale Wanduhrzeit Europe/Berlin.
+- v1.2.0 — Bestätigter Befund (Report `dxArticleList`, 03.09.2026): ein rein aus Kommentaren bestehender `work4all-log`-Block wird beim Speichern aus dem DevExpress Report Designer restlos entfernt (`ScriptsSource`/`ScriptLanguage` verschwinden komplett, nicht nur der Inhalt). Schritt 4 seedet den Block jetzt zusätzlich mit einer harmlosen Anker-Zeile direkt nach der Fußzeile (`private static readonly string _work4allLogAnchor = ...`), damit der kompilierte Skript-Code beim Speichern nicht leer ist — Mitigation laut `fix-log-format.md` noch nicht durch einen echten Designer-Round-Trip verifiziert, daher beim nächsten Testdruck gezielt gegenprüfen.
