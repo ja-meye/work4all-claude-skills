@@ -1,0 +1,18 @@
+{
+  "skills": [
+    "fix-folgeseiten-uebertrag-problem"
+  ],
+  "query": "In Sub_Adresse gibt es ein unsichtbares Platzhalter-Label, das trotz Visible=false noch Platz beansprucht, wenn die Adresse waechst. Bitte beheben.",
+  "files": [
+    "<repx-datei-aus-M001>"
+  ],
+  "expected_behavior": [
+    "Prueft neben dem direkten Visible-Attribut auch den LocalizationItems-Eintrag desselben Ref auf Path=Visible",
+    "Erkennt, dass reines Unsichtbarmachen den reservierten Platz nicht zurueckgibt und entfernt das Element vollstaendig",
+    "Entfernt beim Loeschen auch ExpressionBindings, StylePriority und alle eigenen LocalizationItems-Eintraege des Elements",
+    "Nummeriert die betroffene ItemN-Sammlung anschliessend lueckenlos neu",
+    "Vergroessert ein fachlich sinnvolles Nachbar-Control ueber dessen LocalizationItems-Eintrag (nicht das direkte Attribut) auf den freigewordenen Platz",
+    "Bearbeitet die .repx-Datei ausschliesslich binaer bzw. mit newline='' (kein CRLF-Verlust)",
+    "Weist bei einer 'hat nicht funktioniert'-Rueckmeldung zuerst per strukturellem Diff nach, ob die Datei wirklich vom erwarteten Stand abweicht, bevor eine neue Ursache gesucht wird"
+  ]
+}

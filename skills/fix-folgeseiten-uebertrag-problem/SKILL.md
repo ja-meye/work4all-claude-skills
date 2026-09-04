@@ -3,7 +3,7 @@ name: fix-folgeseiten-uebertrag-problem
 description: Diagnostiziert und repariert die Übertrag-/Folgeseiten-Unterdrückungslogik in DevExpress-XtraReports-.repx-Dateien vom work4all-Aio-Report-Typ (und strukturell ähnlichen Varianten). Unbedingt verwenden, wenn eine .repx-Datei hochgeladen wird und der Nutzer über eine fehlende oder falsche "Übertrag"-Zeile, verschwindende Tabellenüberschriften auf Folgeseiten, falsche sumCarryoverSum-Werte, Seitenumbruch-Probleme bei Positionstabellen, oder allgemein über "Report-Bugs"/"Fehler beim Druck von Angeboten/Rechnungen" bei work4all-Reports spricht — auch wenn nicht explizit "Übertrag" oder "Folgeseite" genannt wird, aber Symptome wie "Betrag stimmt nicht", "Kopfzeile fehlt auf Seite 2", "Summe zu früh/zu spät" beschrieben werden. Auch nutzen, wenn der Nutzer nach einer allgemeinen Aufräumung/Bereinigung ("Skript-Hygiene") des eingebetteten C#-Skripts in einer .repx-Datei fragt (tote Kommentare, leere Event-Handler).
 metadata:
   skill_id: DXJ0001
-  version: 1.7.0
+  version: 1.8.0
 ---
 
 # DevExpress .repx — Übertrag/Folgeseiten-Fix & Skript-Hygiene
@@ -16,7 +16,7 @@ Lies **`references/repx-technical-notes.md`** zuerst, bevor du irgendetwas am Sk
 
 ## Was diese Skill konkret optimiert
 
-Diese Skill deckt neun wiederkehrende Fehlerbilder der Übertrag-/Folgeseiten-Logik ab, von der sabotierten Unterdrückungslogik über Höhen- und Abstandsprobleme bis zur Skript-Hygiene. **Die verbindliche Liste steht im Abschnitt „Unterpunkt-IDs" weiter unten**, die vollständige Beschreibung jedes Musters inklusive Erkennungsmerkmal, Fix und Sicherheitsstufe in `references/fix-catalog.md`.
+Diese Skill deckt zehn wiederkehrende Fehlerbilder der Übertrag-/Folgeseiten-Logik ab, von der sabotierten Unterdrückungslogik über Höhen- und Abstandsprobleme bis zur Skript-Hygiene. **Die verbindliche Liste steht im Abschnitt „Unterpunkt-IDs" weiter unten**, die vollständige Beschreibung jedes Musters inklusive Erkennungsmerkmal, Fix und Sicherheitsstufe in `references/fix-catalog.md`.
 
 > **Eine Quelle je Information (seit v1.7.0).** Muster werden hier bewusst **nicht** zusätzlich in Prosa zusammengefasst. Die frühere Zusammenfassung ist zweimal auseinandergelaufen: Sie beschrieb die Skript-Hygiene noch als „nur auf ausdrücklichen Wunsch", während Schritt 5 derselben Datei sie längst als Pflicht führte, und sie kannte die Auflösung des Konflikts zwischen Muster (g) und (i) nicht. Wer ein Muster ändert, ändert es in `fix-catalog.md` — und nur dort.
 
@@ -36,7 +36,7 @@ Bevor irgendein inhaltlicher Fix (alles außer reiner Skript-Hygiene, Muster (e)
 
 ## Skill-ID, Version & Fix-Log
 
-Diese Skill trägt die ID **DXJ0001** (aktuell Version **1.7.0**). Format und vollständige Spezifikation des `work4all-log`-Blocks (inkl. `<Ergebnis>`-Feld, `<Übersprungen>`-Feld seit `(v3)`, Anker-Zeile seit Regel 8, Idempotenz-Check, Rückwärtskompatibilität zu älteren `(v1)`/`(v2)`-Blöcken) sind zentral dokumentiert in `work4all-reporting-skills:neuen-devexpress-report-skill-anlegen`, `../neuen-devexpress-report-skill-anlegen/references/fix-log-format.md` — dort auch die vollständige Registry aller vergebenen IDs (`../neuen-devexpress-report-skill-anlegen/references/skill-id-registry.md`). Wann und wie diese Skill den Block liest und beschreibt: siehe Schritt 7 „Log-Eintrag schreiben" im Arbeitsablauf unten.
+Diese Skill trägt die ID **DXJ0001** (aktuell Version **1.8.0**). Format und vollständige Spezifikation des `work4all-log`-Blocks (inkl. `<Ergebnis>`-Feld, `<Übersprungen>`-Feld seit `(v3)`, Anker-Zeile seit Regel 8, Idempotenz-Check, Rückwärtskompatibilität zu älteren `(v1)`/`(v2)`-Blöcken) sind zentral dokumentiert in `work4all-reporting-skills:neuen-devexpress-report-skill-anlegen`, `../neuen-devexpress-report-skill-anlegen/references/fix-log-format.md` — dort auch die vollständige Registry aller vergebenen IDs (`../neuen-devexpress-report-skill-anlegen/references/skill-id-registry.md`). Wann und wie diese Skill den Block liest und beschreibt: siehe Schritt 7 „Log-Eintrag schreiben" im Arbeitsablauf unten.
 
 **Wichtig für Schritt 5 (Skript-Hygiene):** Der `work4all-log`-Block sieht wie ein Kommentarblock aus, ist aber KEIN toter Kommentar — er darf von der Hygiene-Routine niemals entfernt werden, auch nicht als vermeintlich "wirkungsloser" Kommentar. Dasselbe gilt für die direkt danach stehende Anker-Zeile (`_work4allLogAnchor`) — sie sieht wie ungenutzter Code aus, ist aber technisch notwendig (siehe `fix-log-format.md`, Abschnitt „Überlebensfähigkeit bei einem Designer-Speichervorgang") und darf nicht als "totes Feld" entfernt werden. Vor jeder Hygiene-Passage explizit prüfen, dass Block und Anker-Zeile (erkennbar an der festen Marker-Zeile `=== work4all-log` bzw. am Bezeichner `_work4allLogAnchor`) unangetastet bleiben.
 
@@ -53,6 +53,7 @@ Seit v1.2.0 (Meta-Skill-Baustein 11, siehe `unterpunkt-ids.md` in `neuen-devexpr
 | `DXJ0001.F` | Seite-1-Leerraum bei unterdrückten Übertrag-/Folgeseiten-Sektionen behoben | (i) | Vorschlag mit Rückfrage |
 | `DXJ0001.G` | Mindesthöhen statt `KeepTogether`; bei gleichzeitigem (i) wandert der Wert vom Design in die Laufzeit | (g) — ersetzt (b) | Automatisch sicher bei bestätigter Referenz |
 | `DXJ0001.H` | Batch-Sicherheits-Reset bei Sammeldruck | (d) | Vorschlag mit Rückfrage |
+| `DXJ0001.I` | Unsichtbarer Platzhalter mit falscher `Visible`-Localization entfernt, Nachbar-Controls vergrößert | (j) | Vorschlag mit Rückfrage |
 
 `DXJ0001.D` ist bewusst kein Fix-Muster, sondern steht für den `work4all-log`-Mechanismus selbst (Schritt 7) — er erscheint im Inhaltsverzeichnis-Skill (`DXJ0004`), hat aber keinen eigenen Katalog-Eintrag. Details je ID: siehe die jeweilige Überschrift in `references/fix-catalog.md`.
 

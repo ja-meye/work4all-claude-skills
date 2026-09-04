@@ -65,19 +65,24 @@ Jede `<Scripts On[Event]="MethodName" />`-Referenz im XML-Layout-Teil muss einer
 
 ## Der `<Localization>`-Block — indirekte Speicherung von Designer-Werten
 
-Nicht jede im DevExpress-Designer manuell geänderte Eigenschaft landet als direktes XML-Attribut auf dem betroffenen Element. Insbesondere `HeightF`, `SizeF`, `LocationFloat` und teils `Visible` werden häufig stattdessen indirekt in einem separaten `<Localization>`-Element weiter oben in der Datei abgelegt, als Liste von Einträgen der Form:
+Nicht jede im DevExpress-Designer manuell geänderte Eigenschaft landet als direktes XML-Attribut auf dem betroffenen Element. Insbesondere `HeightF`, `SizeF`, `LocationFloat` und `Visible` (seit 04.09.2026 auch für `Visible` konkret bestätigt, siehe unten) werden häufig stattdessen indirekt in einem separaten Container-Element weiter oben in der Datei abgelegt, als Liste von Einträgen der Form:
 
 ```xml
 <Item354 Ref="2991" Component="#Ref-1931" Culture="Default" Path="HeightF" Data="40" />
 ```
 
+**Der tatsächliche Container-Tag-Name ist `<LocalizationItems>`** — „`<Localization>`-Block" ist der eingebürgerte Kurzname, nicht der wörtliche XML-Tag; eine Stringsuche sucht nach `LocalizationItems`, nicht nach `<Localization`.
+
 `Component="#Ref-N"` verweist über die `Ref`-Nummer auf das eigentliche Ziel-Element (Band, Table, Control, …); `Path` ist der Eigenschaftsname; `Data` der aktuell gesetzte Wert. `Culture` ist meist `Default`, kann bei mehrsprachigen Reports aber auch `en`/`fr`/`nl` sein — dann existieren ggf. mehrere Einträge für denselben `Component`-Ref mit unterschiedlicher `Culture`, die unabhängig voneinander gepflegt werden müssen.
 
-**Praktische Konsequenz** bei jeder Höhen-/Größen-/Positions-Änderung, die per Diff gegen eine im Designer bearbeitete Datei nachvollzogen werden soll:
+Der Mechanismus ist nicht auf Geometrie-Properties beschränkt: er kann grundsätzlich für jede per `Path` referenzierte Property gelten, einschließlich boolescher Properties wie `Visible` — bestätigt am Report `dxAio_template` (`fix-folgeseiten-uebertrag-problem/references/known-issues.md`, Eintrag 30 und `fix-catalog.md`, Muster (j)): ein direktes `Visible="false"`-Attribut blieb dort ohne Wirkung, weil ein `<LocalizationItems>`-Eintrag `Path="Visible" Data="true"` es überschrieb.
 
-1. Zuerst das Ziel-Element selbst auf ein direktes Attribut prüfen (`HeightF="..."`, `SizeF="..."`, etc.).
-2. Zusätzlich immer nach `Component="#Ref-<RefDesElements>"` im gesamten Dokument suchen — dort kann der eigentlich wirksame (oder überschreibende) Wert stehen, unabhängig vom direkten Attribut.
-3. Beim eigenen Setzen einer neuen Höhe entsprechend nicht nur das Element-Attribut setzen, sondern auch prüfen/setzen, ob ein passender `<Localization>`-Eintrag existiert bzw. angelegt werden muss.
+**Praktische Konsequenz** bei jeder Eigenschafts-Änderung, die per Diff gegen eine im Designer bearbeitete Datei nachvollzogen werden soll — nicht nur bei Höhe/Größe/Position:
+
+1. Zuerst das Ziel-Element selbst auf ein direktes Attribut prüfen (`HeightF="..."`, `SizeF="..."`, `Visible="..."`, etc.).
+2. Zusätzlich immer nach `Component="#Ref-<RefDesElements>"` im gesamten `<LocalizationItems>`-Block suchen — dort kann der eigentlich wirksame (oder überschreibende) Wert stehen, unabhängig vom direkten Attribut.
+3. Beim eigenen Setzen eines neuen Werts entsprechend nicht nur das Element-Attribut setzen, sondern auch prüfen/setzen, ob ein passender `<LocalizationItems>`-Eintrag existiert bzw. angelegt werden muss.
+4. Wird ein Element komplett entfernt (nicht nur unsichtbar gemacht): alle seine eigenen `<LocalizationItems>`-Einträge im selben Arbeitsschritt mitentfernen und die betroffene `ItemN`-Sammlung lückenlos neu nummerieren (siehe Abschnitt „Sammlungen: `ItemN` muss lückenlos sein" unten).
 
 Ein reiner Element-für-Element-Vergleich der vermuteten Stelle kann diese Änderungen komplett übersehen (weil weder vorher noch nachher ein direktes Attribut existiert) — zuverlässiger ist ein vollständiger, positionsweiser Baumvergleich der gesamten Datei (alle Elemente in Dokumentreihenfolge, `Ref`-Werte beim Vergleich ignorieren), der solche indirekten Änderungen automatisch mit erfasst.
 

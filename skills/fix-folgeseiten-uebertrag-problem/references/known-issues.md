@@ -36,6 +36,9 @@ Format pro Eintrag: **Was passiert ist → Was man daraus lernt → Wie man es k
 - 26. Nicht jeder auffällige Design-Wert ist ein Bug: `Visible="false"` an einem Band kann durch ein ExpressionBinding zur Laufzeit gesetzt werden
 - 27. Die Referenzdatei ist nicht automatisch korrekt — eine Diagnose-Zwischenfassung kann eigene Fehler enthalten
 - 28. `Padding` wird als `Left,Right,Top,Bottom,Dpi` serialisiert — ein als „Top" dokumentierter Fix saß auf der falschen Position
+- 29. `.repx`-Dateien ausschließlich binär bearbeiten — Text-Mode-Lesen normalisiert CRLF unsichtbar
+- 30. `<LocalizationItems>` übersteuert auch `Visible`, nicht nur `HeightF`/`SizeF`/`LocationFloat`
+- 31. Eine im Designer bereits geöffnete Datei wird bei externer Änderung nicht automatisch neu geladen
 
 ## 1. `sumCarryoverSum()` benötigt zwingend das `<Summary Running="Group">`-Element (entgegen der Doku-Erwartung)
 
@@ -349,3 +352,37 @@ Padding-Format ist `Left,Top,Right,Bottom,Dpi` — nur der zweite Wert (Top) wir
 **Was man daraus lernt:** DevExpress serialisiert `PaddingInfo` als **`Left,Right,Top,Bottom,Dpi`** — `Top` ist Position **3**. Die Reihenfolge lässt sich in fast jeder work4all-Report-Datei direkt beweisen, statt sie einer Dokumentation zu glauben: viele Zellen tragen eine explizite `ExpressionBinding` auf `Padding.LeftF` bzw. `Padding.RightF`. Im konkreten Fall waren es 19 Zellen — ausnahmslos jede mit `Padding.LeftF = 10` hatte an Position 1 eine 10, jede mit `Padding.RightF = 10` an Position 2. Ein Changelog-Text ist kein Beleg; die Datei selbst ist einer.
 
 **Wie man es künftig vermeidet:** Check `C17` in `scripts/validate_repx.py` leitet die Reihenfolge bei jedem Lauf aus den vorhandenen `Padding.*F`-Bindungen der Datei ab und meldet jeden Widerspruch zwischen Bindung und statischem Attribut. Zusätzlich benennt Check `C18` jede Padding-Änderung gegenüber der Baseline im Klartext (z. B. `xrTableCell18: Right 0->10`) — damit fällt sofort auf, wenn eine Änderung auf einer anderen Position gelandet ist als beabsichtigt. Für den hier beschriebenen Fehler meldet er genau das. Vor jeder Padding-Änderung: Position aus dem Check-Ergebnis nehmen, nicht aus einer Beschreibung. Und generell — dies ist derselbe Fehlertyp wie Eintrag 25 (Zählung statt element-gescopter Prüfung): eine Aussage über eine Datei wird an der Datei verifiziert, nicht aus einem Text übernommen.
+
+---
+
+## 29. `.repx`-Dateien ausschließlich binär bearbeiten — Text-Mode-Lesen normalisiert CRLF unsichtbar
+
+**Wann aufgefallen:** 04.09.2026, Report `dxAio_template`, Sektion `Sub_Adresse`, Muster (j).
+
+**Was passiert ist:** Eine erste Fix-Iteration las die Datei mit `open(pfad, encoding='utf-8').read()` (ohne `newline=''`) und schrieb sie nach der Textänderung mit `open(pfad, 'w', encoding='utf-8').write(...)` zurück. Ein anschließender inhaltlicher String-Vergleich zeigte keine Abweichung außer der beabsichtigten Änderung — die Datei „sah" korrekt aus. Der Nutzer meldete jedoch, die abgelegte Datei enthalte die Änderung nicht, obwohl sie doch geschrieben worden war. Ursache: Python normalisiert beim Text-Mode-Lesen automatisch alle `\r\n` (CRLF, das durchgängige Zeilenende-Format in `.repx`-Dateien) zu `\n` — beim Zurückschreiben im Text-Mode werden diese dann plattformabhängig neu geschrieben, was in dieser Umgebung zu reinem `\n` statt CRLF führte. Ein reiner Inhalts-String-Vergleich (nach demselben Normalisierungsschema) deckt das nicht auf, weil er demselben Normalisierungsschritt unterliegt wie die Ursache selbst.
+
+**Was man daraus lernt:** „Kein sichtbarer inhaltlicher Unterschied" ist keine ausreichende Verifikation für eine Datei, deren exaktes Byte-Format (Zeilenenden, BOM) Teil ihrer Korrektheit ist — ein Vergleich, der selbst über Text-Mode-Lesen läuft, kann genau die Abweichung verschleiern, die er eigentlich prüfen soll. Dieselbe Regel steht bereits in `repx-technical-notes.md`, Abschnitt „Sichere Bearbeitungs-Pipeline" Schritt 1 — dieser Vorfall ist der konkrete Beleg dafür, warum sie dort so scharf formuliert ist.
+
+**Wie man es künftig vermeidet:** `.repx`-Dateien ausnahmslos binär bearbeiten: Lesen mit `open(pfad, 'rb').read()`, Änderungen auf dem `bytes`-Objekt durchführen (z. B. `bytes.replace(...)` mit UTF-8-kodierten Such-/Ersatzmustern), Schreiben mit `open(pfad, 'wb').write(...)`. Alternativ, falls Text-Mode aus anderen Gründen nötig ist: zwingend `newline=''` bei `open()` angeben, sowohl beim Lesen als auch beim Schreiben. Eine Verifikation sollte zusätzlich die CRLF-Anzahl und das BOM vorher/nachher explizit zählen/prüfen, nicht nur den dekodierten Textinhalt vergleichen — ein Kandidat für einen künftigen Check in `scripts/validate_repx.py`, der das direkt auf der ausgelieferten Datei nachprüft.
+
+---
+
+## 30. `<LocalizationItems>` übersteuert auch `Visible`, nicht nur `HeightF`/`SizeF`/`LocationFloat`
+
+**Wann aufgefallen:** 04.09.2026, Report `dxAio_template`, Sektion `Sub_Adresse`, Muster (j).
+
+**Was passiert ist:** Ein Platzhalter-Label sollte unsichtbar gemacht werden. Das direkte XML-Attribut `Visible="false"` wurde korrekt gesetzt und binär-sicher geschrieben (siehe Eintrag 29). Der Nutzer meldete per Screenshot aus dem DevExpress-Enduserdesigner-Properties-Panel, dass „Visible" dort weiterhin `True` anzeigte. Ursache: Für dieses Element existierte bereits ein `<LocalizationItems>`-Eintrag (`Path="Visible"`, `Data="true"`), der das direkte Attribut überschreibt — dieselbe Override-Mechanik, die für `HeightF`/`SizeF`/`LocationFloat` bereits aus Eintrag 6 bekannt war, hier aber erstmals für `Visible` bestätigt.
+
+**Was man daraus lernt:** Der `<LocalizationItems>`-Override-Mechanismus ist nicht auf Geometrie-Properties beschränkt — er kann grundsätzlich für jede in einem solchen Eintrag referenzierte `Path`-Property gelten, einschließlich boolescher Properties wie `Visible`. Ein direktes Attribut allein zu ändern und die Datei danach nur auf dieses eine Attribut hin zu prüfen, reicht nicht aus, wenn ein `LocalizationItems`-Eintrag für denselben `Ref` und `Path` existiert. **Abgrenzung zu Eintrag 26:** Dort überschreibt ein `ExpressionBinding` den Wert erst zur Laufzeit beim Druck: der Design-Wert selbst war schon korrekt, nur schien er "verdächtig". Hier dagegen ist bereits der Design-/Anzeige-Wert selbst durch die Localization überschrieben — zwei unterschiedliche Mechanismen, die beide vor einer Änderung geprüft werden müssen, nicht nur einer.
+
+**Wie man es künftig vermeidet:** Bei JEDER Property-Änderung an einem Element grundsätzlich prüfen, ob im `<LocalizationItems>`-Block ein Eintrag mit demselben `Ref` (bzw. `Component="#Ref-N"`) und demselben `Path` existiert — unabhängig davon, um welche Property es sich handelt — und diesen Eintrag im selben Arbeitsschritt mitändern (siehe `repx-technical-notes.md`, Abschnitt „Der `<Localization>`-Block"). Bei einer reinen Sichtprüfung im DevExpress-Designer-Properties-Panel gilt: das Panel zeigt den wirksamen (übersteuerten) Wert, nicht das direkte XML-Attribut — bei einer Abweichung zwischen erwartetem Fix und Designer-Anzeige zuerst den `LocalizationItems`-Block auf einen passenden Eintrag prüfen, dann erst ein `ExpressionBinding` auf dieselbe Property (Eintrag 26), bevor eine andere Ursache vermutet wird.
+
+---
+
+## 31. Eine im Designer bereits geöffnete Datei wird bei externer Änderung nicht automatisch neu geladen
+
+**Was passiert ist:** Im Verlauf der Diagnose am Report `dxAio_template` (04.09.2026, Muster (j)) meldete der Nutzer mehrfach, ein ausgelieferter Fix habe „nicht funktioniert" — ein anschließender vollständiger struktureller Vergleich (name-basiert, duplikat-sicher, float-tolerant) zeigte jedoch, dass die ausgelieferte Datei inhaltlich exakt der vom Nutzer selbst manuell erzeugten „bekannt guten" Version entsprach. Ursache in mindestens einem Fall: die Datei war im DevExpress Report Designer bereits geöffnet und wurde nach dem externen Überschreiben nicht automatisch neu vom Datenträger geladen — der Designer zeigte weiterhin seinen alten, im Arbeitsspeicher gehaltenen Stand.
+
+**Was man daraus lernt:** Eine gemeldete „hat nicht funktioniert"-Rückmeldung ist nicht automatisch ein Beleg für einen tatsächlichen Fehler im ausgelieferten Fix — sie kann ebenso gut aus einem rein lokalen Anzeige-/Cache-Zustand auf Seiten des Nutzers stammen. Ein struktureller Vergleich gegen die zuvor als korrekt bestätigte Version ist der zuverlässigere erste Diagnoseschritt, bevor eine neue inhaltliche Fehlersuche begonnen wird.
+
+**Wie man es künftig vermeidet:** Bei einer „hat nicht funktioniert"-Meldung zuerst per struktureller Diff-Prüfung verifizieren, ob die ausgelieferte Datei tatsächlich vom erwarteten Zustand abweicht, bevor eine neue Fehlerursache gesucht wird. Stimmt der Inhalt bereits, den Nutzer aktiv bitten, die Datei im DevExpress Report Designer vollständig zu schließen und neu zu öffnen (bzw. die Designer-Anwendung neu zu starten), da ein bereits geöffnetes Dokument externe Änderungen nicht automatisch übernimmt.

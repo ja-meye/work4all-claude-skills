@@ -6,6 +6,18 @@ Format pro Eintrag: **Datum — Kontext → Befund → Konsequenz.**
 
 ---
 
+## 2026-09-04 — Ein nicht ladbarer Report lässt sich reparieren, indem sein Inhalt in das Grundgerüst einer funktionierenden Parallelversion übertragen wird; Connection Name ist eine unterschätzte Fehlerquelle
+
+**Kontext:** Ein bestehender Listenreport (`neuen-devexpress-listenreport-bauen`, DXJ0002) lud nicht mehr im Programm. Der Nutzer hatte bereits eine zweite, strukturell viel einfachere Version desselben Report-Typs neu in der App angelegt, die nachweislich lud. Aufgabe: Elemente, Logik, Query und Parameter aus der defekten Datei übernehmen, ohne das Grundgerüst der funktionierenden Datei zu verändern, und ohne das eingebettete Skript anzufassen (unklar, ob Scripts in der Zielumgebung überhaupt aktiviert sind).
+
+**Befund:** Root-Element und Datenquellen-Mechanik beider Dateien waren strukturell identisch, bis auf einen einzigen, leicht zu übersehenden Unterschied: Der `<Connection Name="...">`-Wert in der defekten Datei unterschied sich von dem der funktionierenden Datei nur um ein angehängtes Leerzeichen plus Ziffer (z.B. `"...Connection"` vs. `"...Connection 1"`). Eine rein strukturelle Validierung (wohlgeformtes XML, eindeutige Ref-IDs, aufgelöste Verweise, Feld-Abgleich gegen das ResultSchema) hätte diesen Unterschied nicht gefunden, weil beide Varianten für sich genommen syntaktisch gültig sind — er fällt nur beim gezielten Attribut-Abgleich zwischen defekter und bekannt funktionierender Referenzdatei auf. Das reiht sich ein in die bereits dokumentierte Lehre vom 2026-09-03 ("Root-Attribute müssen konsistent zur restlichen Datei sein, nicht nur syntaktisch gültig") — hier trifft es allerdings nicht ein Root-Attribut, sondern einen Wert innerhalb der eingebetteten Datenquelle.
+
+Die gewählte Reparaturstrategie — Grundgerüst der funktionierenden Datei unverändert lassen, nur `<Parameters>`, `<Bands>`, `<StyleSheet>`, `<ParameterPanelLayoutItems>`, `<Watermarks>` und die Datenquelle (Query/Parameter/ResultSchema) aus der defekten Datei übernehmen, dabei aber die Connection auf den bestätigt funktionierenden Wert umstellen — hat sich doppelt bestätigt: einmal beim Laden im Programm, ein zweites Mal, weil der Nutzer die reparierte Datei zusätzlich in sein Visual-Studio-Projekt geladen und von dort neu exportiert hat, ohne dass sich am Inhalt etwas änderte (nur BOM/Zeilenumbrüche unterschieden sich, der Inhalt war byteidentisch).
+
+**Konsequenz:** `neuen-devexpress-listenreport-bauen` (DXJ0002, → v1.3.0) bekam einen neuen Sonderfall-Abschnitt "bestehenden Report reparieren, der nicht lädt (Content-Transplantation)" mit den obigen Schritten, inkl. dem expliziten Hinweis, die Connection Name als erste Fehlerquelle zu prüfen, bevor eine aufwändigere Diagnose begonnen wird. Die Trigger-Beschreibung im Frontmatter wurde erweitert, damit dieser Reparatur-Fall künftig auch ohne expliziten Verweis auf den Skill-Namen erkannt wird.
+
+---
+
 ## 2026-09-03 — Ein `work4all-log`-Block aus reinen Kommentaren übersteht keinen Designer-Speichervorgang
 
 **Kontext:** Beim Bau des Reports `dxArticleList` (Skill `neuen-devexpress-listenreport-bauen`, DXJ0002) wurden zunächst zwei unabhängige Bugs behoben, die das Laden im DevExpress Report Designer verhinderten: ein falsches `Version`-Attribut (`25.2` statt `25.1`, inkonsistent zur referenzierten Assembly `v25.1`) und ein falsches `ScriptLanguage`-Attribut (`VisualBasic` statt `CSharp`, inkonsistent zum tatsächlich verwendeten `//`-Kommentarstil und zu allen anderen produktiven Reports). Nach Behebung beider Punkte lud die Datei erfolgreich. Der Nutzer öffnete sie im Designer und speicherte sie dort einmal.

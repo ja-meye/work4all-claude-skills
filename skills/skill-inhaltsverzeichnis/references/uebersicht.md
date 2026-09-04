@@ -2,7 +2,7 @@
 
 Lebendes Dokument (analog zu `known-issues.md` der Fach-Skills) — bei jeder inhaltlichen Überarbeitung eines Verbesserungs-Skills wird diese Tabelle im selben Zug mitgepflegt (siehe `SKILL.md`, Schritt 2). Quelle der Wahrheit für den Inhalt jeder ID bleibt aber immer der jeweilige Fach-Skill (`fix-catalog.md` bzw. `SKILL.md`, Abschnitt „Unterpunkt-IDs") — diese Tabelle ist eine Kopie zur schnellen Übersicht, kein Ersatz.
 
-## DXJ0001 — `fix-folgeseiten-uebertrag-problem` (Verbesserungs-Typ, aktuell v1.7.0)
+## DXJ0001 — `fix-folgeseiten-uebertrag-problem` (Verbesserungs-Typ, aktuell v1.8.0)
 
 | ID | Kurzbeschreibung | Sicherheitsstufe |
 |----|----|----|
@@ -14,6 +14,7 @@ Lebendes Dokument (analog zu `known-issues.md` der Fach-Skills) — bei jeder in
 | `DXJ0001.F` | Übertrag-Problem: Sektionen werden auf Seite 1 nicht mehr fälschlich mit reserviertem Platz angezeigt | Vorschlag mit Rückfrage* |
 | `DXJ0001.G` | Mindesthöhen statt `KeepTogether` gegen Weißraum/abgeschnittene Übertrag-Anzeige (ersetzt `DXJ0001`-Alt-Muster b) | Automatisch sicher* |
 | `DXJ0001.H` | Batch-Sicherheits-Reset bei Sammeldruck mehrerer Belege in einem Lauf | Vorschlag mit Rückfrage* |
+| `DXJ0001.I` | Unsichtbarer Platzhalter mit falscher `Visible`-Localization entfernt, Nachbar-Controls auf freigewordenen Platz vergrößert | Vorschlag mit Rückfrage |
 
 **Prüfwerkzeug:** Alle Fixes dieses Skills werden mit `fix-folgeseiten-uebertrag-problem/scripts/validate_repx.py` abgesichert (Checks `C01`–`C19`, Exit-Code 1 bei FAIL) — verbindlich nach jeder Bearbeitungsrunde und zusätzlich als Selbst-Audit auf der verwendeten Referenzdatei.
 

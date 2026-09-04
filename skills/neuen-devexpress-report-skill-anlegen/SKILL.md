@@ -3,7 +3,7 @@ name: neuen-devexpress-report-skill-anlegen
 description: Legt einen neuen work4all-DevExpress-Report-Skill (Verbesserungs-Typ wie "fix-folgeseiten-uebertrag-problem" oder Neuerstellungs-Typ wie "neuen-devexpress-listenreport-bauen") strukturiert an und liefert ihn sowohl an das Cowork-Plugin als auch an das lokale GitHub-Repo C:\GitHub\work4all-claude-skills aus. Unbedingt verwenden, wenn der Nutzer einen neuen DevExpress-Skill anlegen, erweitern oder strukturieren möchte — auch bei kurzen Trigger-Sätzen wie "create new dx skill", "neuen DX Skill erstellen", "neuen Skill anlegen", "DX Skill Bauplan", "mach daraus einen skill" (im DevExpress/Report-Kontext), oder wenn der Nutzer nach Skill-ID, Versionierung, Fix-Log oder einer einheitlichen Struktur für Report-Skills fragt.
 metadata:
   skill_id: DXJ0003
-  version: 0.7.0
+  version: 0.8.0
 ---
 
 # Neuen DevExpress-Report-Skill anlegen
@@ -50,7 +50,7 @@ Details zu Skill-ID-Vergabe und Versionierung: siehe `references/skill-id-regist
 
 Ein nummerierter Ablauf, typtypisch:
 
-- **Verbesserungs-Typ**: Report entgegennehmen → **Backup mit Zeitstempel anlegen (Pflicht, siehe Baustein 9, immer als erstes)** → Referenzdatei anfordern (Pflicht) → Befund melden vor Änderung → Fixes anwenden (nach Sicherheitsstufen, siehe unten) → Skript-Hygiene als separater Schritt → Validierung → Auslieferung mit Zeitstempel → Wissensdatenbank (`known-issues.md`) pflegen.
+- **Verbesserungs-Typ**: Report entgegennehmen → Referenzdatei anfordern (Pflicht) → Befund melden vor Änderung → Fixes anwenden (nach Sicherheitsstufen, siehe unten) → Skript-Hygiene als separater Schritt → Validierung → **Auslieferung IMMER unter einem neuen, zeitgestempelten Dateinamen (Pflicht, siehe Baustein 9) — nie durch Überschreiben derselben Datei** → Wissensdatenbank (`known-issues.md`) pflegen.
 - **Neuerstellungs-Typ**: Mockup + Datenstruktur + Referenz-`.repx` entgegennehmen → Excel-Feldzuordnung erstellen und abstimmen → Query/Joins übernehmen → neue `.repx` bauen → Validierung → Auslieferung mit Zeitstempel.
 
 Beide Typen: Wird an einem Punkt des Ablaufs das eingebettete C#-Skript oder das rohe XML einer bestehenden `.repx` direkt gelesen oder verändert, ist vorher Baustein 10 (`references/repx-format-basics.md`) zu lesen — unabhängig vom fachlichen Thema des Skills.
@@ -95,17 +95,23 @@ Vollständige Spezifikation: `references/fix-log-format.md`. Kurzfassung: jeder 
 
 Vollständiger Ablauf: `references/ablage-und-versionierung.md`. Kurzfassung: jeder neue oder geänderte Skill wird IMMER an zwei Orten ausgeliefert — als Cowork-Plugin-Paket (`SendUserFile`) und im lokalen GitHub-Repo `C:\GitHub\work4all-claude-skills\skills\...` (via Device-Bridge: stage → SendUserFile → `device_commit_files`, da für dieses Gerät kein `device_bash` verfügbar ist). Dazu liefert Claude immer eine fertige Commit-Message (Titel + Grund + Änderungen-Liste) im etablierten Stil des Nutzers.
 
-### 9. Backup-Pflicht vor Änderung
+### 9. Auslieferung immer unter neuem Zeitstempel-Dateinamen — kein separates Backup mehr nötig
 
-Jeder Skill, der eine **bestehende** `.repx`-Datei verändert (Verbesserungs-Typ; beim Neuerstellungs-Typ nur relevant, falls ausnahmsweise eine bestehende Datei direkt überschrieben statt als neue Datei ausgeliefert wird), legt **vor der ersten inhaltlichen Änderung** automatisch — ohne Rückfrage — eine Sicherungskopie mit Zeitstempel im gleichen Verzeichnis wie das Original an:
+**Neuer Standard ab v0.8.0 (löst die bisherige separate Backup-Pflicht ab):** Jeder Skill, der eine **bestehende** `.repx`-Datei verändert (Verbesserungs-Typ; beim Neuerstellungs-Typ nur relevant, falls ausnahmsweise auf einer bestehenden Datei aufgebaut wird), liefert das Ergebnis **grundsätzlich als eine neue Datei mit neuem Zeitstempel im Dateinamen** aus (Format bereits in Baustein 5 „Output-Konvention" festgelegt: `<Reportname>_<JJJJ-MM-TT>_<hh-mm>.repx`) — **niemals durch Überschreiben der Originaldatei unter demselben Namen.**
+
+Der Grund für die frühere separate Sicherungskopie (`<Reportname>_backup_<JJJJMMTT-hhmm>.repx`) entfällt damit: Wenn jede Auslieferung ohnehin einen eigenen, neuen Zeitstempel im Dateinamen trägt, IST die vorherige Version — unter ihrem eigenen, älteren Zeitstempel — bereits automatisch die Sicherungskopie. Ein zusätzliches, separates `_backup_...`-File wäre nur eine redundante dritte Kopie desselben Zustands und wird deshalb **nicht mehr** automatisch angelegt.
+
+**Ausnahme — explizites Überschreiben auf Nutzerwunsch:** Nur wenn der Nutzer ausdrücklich verlangt, dieselbe Datei unter demselben Namen in-place zu überschreiben (z. B. weil ein externes System exakt diesen Dateinamen referenziert), UND dabei explizit KEINEN neuen Dateinamen wünscht, wird stattdessen vor dieser einen In-Place-Änderung automatisch — ohne separate Rückfrage — eine Sicherungskopie nach dem alten Schema angelegt:
 
 ```
 <Reportname>_backup_<JJJJMMTT-hhmm>.repx
 ```
 
-Diese Sicherung ist keine der drei Sicherheitsstufen aus Baustein 3 (sie ist keine fachliche Änderungsentscheidung), sondern eine reine, immer ausgeführte Vorsichtsmaßnahme — sie passiert als aller erster Schritt, noch vor Diagnose/Extraktion, damit auch der unveränderte Ausgangszustand nachvollziehbar bleibt, falls schon während der Diagnose versehentlich etwas verändert wird.
+Das ist die einzige Situation, in der noch ein separates Backup-File entsteht — sie ist die Ausnahme, nicht der Regelfall.
 
-Hintergrund: Diese Regel gilt bereits projektweit als Arbeitsweise-Vorgabe, war aber bisher nicht als Skill-Pflichtbaustein verankert. Ohne diese Verankerung gilt sie nicht mehr automatisch, sobald ein Skill außerhalb dieses Projekt-Kontexts verwendet wird (anderes Projekt, andere Session) — deshalb ab v0.2.0 fester Bestandteil des Bauplans.
+Diese Ausliefer-Konvention ist keine der drei Sicherheitsstufen aus Baustein 3 (sie ist keine fachliche Änderungsentscheidung), sondern eine reine, immer ausgeführte Vorsichtsmaßnahme.
+
+Hintergrund: Die ursprüngliche Backup-Pflicht (v0.2.0) entstand aus einer bereits projektweit geltenden Arbeitsweise-Vorgabe. In der praktischen Anwendung (Report `dxAio_template`, mehrere iterative Diagnoserunden am 03.–04.09.2026) hat sich gezeigt, dass eine separate Backup-Datei bei ohnehin durchgängig zeitgestempelten Auslieferungsnamen keinen zusätzlichen Schutz bietet, aber zusätzliche, leicht verwechselbare Dateien im Zielverzeichnis erzeugt. Der Nutzer hat daraufhin ausdrücklich verlangt, künftig grundsätzlich eine neue, zeitgestempelte Datei statt eines In-Place-Überschreibens auszuliefern, gerade damit kein separates Backup mehr nötig ist.
 
 ### 10. Gemeinsame .repx-Technik-Basis
 
@@ -145,6 +151,7 @@ Jeder Skill dieses Plugins hält die offiziellen Vorgaben ein. Sie sind nicht ko
 
 ## Versionierung dieses Meta-Skills
 
+- v0.8.0 — Baustein 9 grundlegend geändert (Nutzerwunsch nach Abschluss der Diagnose-Reihe am Report `dxAio_template`, 04.09.2026): Die bisherige Pflicht, vor jeder Änderung automatisch ein separates `<Reportname>_backup_<JJJJMMTT-hhmm>.repx` anzulegen, entfällt als Regelfall. Neuer Standard: jede Auslieferung erfolgt grundsätzlich unter einem neuen, zeitgestempelten Dateinamen (bereits in Baustein 5 festgelegtes Format) statt durch Überschreiben der Originaldatei — die jeweils vorherige, unter ihrem eigenen Zeitstempel erhalten bleibende Version übernimmt dadurch automatisch die Rolle der Sicherungskopie, ein zusätzliches separates Backup-File ist überflüssig. Die alte Backup-Konvention bleibt als Ausnahme bestehen, ausschließlich wenn der Nutzer ausdrücklich ein In-Place-Überschreiben derselben Datei unter demselben Namen verlangt. Baustein 2 (Schritte, Verbesserungs-Typ) entsprechend angepasst: der bisherige erste Schritt „Backup mit Zeitstempel anlegen" ist entfallen, die Auslieferung mit neuem Zeitstempel ist jetzt explizit als Pflicht markiert. Zusätzlich `references/repx-format-basics.md` (Baustein 10, Abschnitt „Der `<Localization>`-Block") um die am selben Report bestätigte, themenneutrale Erkenntnis ergänzt, dass der Override-Mechanismus auch für `Visible` gilt, nicht nur für Höhen-/Größen-/Positions-Properties — Details und die fachspezifische Ausprägung in `fix-folgeseiten-uebertrag-problem` (`DXJ0001` v1.8.0).
 - v0.1.0 — Erstfassung: Bauplan mit den 8 Pflichtbausteinen, Übersicht-zuerst-Regel, Skill-ID-Format `DX<Kürzel><4-stellig>`.
 - v0.2.0 — Zwei fehlende, wiederkehrend benötigte Bausteine ergänzt, damit künftige Korrektur-Skills keine bereits gelösten Probleme erneut lösen oder Regeln vergessen: Baustein 9 (Backup-Pflicht vor jeder Änderung, bisher nur Projekt-Instruction, jetzt Skill-Pflichtbaustein) und Baustein 10 (gemeinsame, themenneutrale `.repx`-Technik-Basis in `references/repx-format-basics.md`, damit Encoding-/Escaping-/Bandmodell-Wissen nicht pro Skill dupliziert wird). Baustein 4 (Validierung) verweist jetzt auf eine neue generische Basis-Checkliste (`references/validation-generic.md`), die jeder Fach-Skill um eigene Punkte ergänzt statt sie neu zu schreiben.
 - v0.2.1 — Fehlerkorrektur in `repx-format-basics.md`, Bearbeitungs-Pipeline Schritt 4.3: Zeilenenden werden jetzt explizit auf reines `\n` normalisiert, BEVOR `\n` → `&#xD;&#xA;` kodiert wird — sonst blieb bei jedem Zeilenumbruch im gesamten Skript ein rohes `\r` stehen (sichtbar als Leerzeile nach jeder Zeile, siehe `fix-folgeseiten-uebertrag-problem/references/known-issues.md` Eintrag 13). Neuer Pflicht-Validierungspunkt 12 in `references/validation-generic.md` ergänzt. Stale Verweise auf `work4all-skill-log` auf den aktuellen Blocknamen `work4all-log` korrigiert.

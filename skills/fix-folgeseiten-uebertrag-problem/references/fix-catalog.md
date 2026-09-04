@@ -15,6 +15,7 @@ Jedes Muster ist **verhaltensbasiert** beschrieben — an dem, was der Code tut,
 - (g)
 - (h)
 - (i)
+- (j)
 
 ## (a) · Unterpunkt-ID `DXJ0001.B` · BeforePrint-Sabotage der PrintOnPage-Logik
 
@@ -196,3 +197,23 @@ Zusätzlich, als verwandtes Symptom in manchen Report-Varianten: Die Positionsta
 **Wichtiger technischer Hinweis:** Dieser Fehler ist im reinen C#-Skript-Diff nur teilweise sichtbar (Fix-Teil 1 und 2 ja, Fix-Teil 3 und 4 nicht, wenn sie über den `<Localization>`-Block laufen) — ein vollständiger struktureller Diff (siehe `repx-technical-notes.md`, Abschnitt „Der `<Localization>`-Block") ist zwingend nötig, reiner Skript-Vergleich reicht nicht (vgl. `known-issues.md` Eintrag 8, dasselbe Muster wie bei Fix (g)).
 
 **Automatisierungssicherheit:** *Vorschlag mit Rückfrage* für alle vier Teile — die Bandaufteilung (Teil 1) ist strukturell eingreifend genug, dass sie nicht ohne Bestätigung automatisch angewendet werden sollte, selbst bei vorliegender Referenzdatei. Automatisch sicher nur, wenn eine bestätigte Referenzdatei exakt denselben Bandaufbau (gleiche Aufteilung Berechnung/Anzeige) bereits zeigt.
+
+---
+
+## (j) · Unterpunkt-ID `DXJ0001.I` · Unsichtbarer Platzhalter mit falscher `Visible`-Localization verursacht Leerraum
+
+**Vom Kunden bestätigt getestet (04.09.2026, Report `dxAio_template`, Sektion `Sub_Adresse`).** Siehe `known-issues.md` Einträge 29–31 für die Diagnose-Historie.
+
+**Muster / Symptom:** Ein Steuerelement (im bestätigten Fall ein `XRLabel`, reiner Platzhalter ohne Anzeigezweck) soll unsichtbar sein und zeigt sich im Enduserdesigner-Properties-Panel trotzdem als `Visible = True`, obwohl das direkte XML-Attribut `Visible="false"` bereits korrekt gesetzt ist. Solange das Element sichtbar bleibt bzw. auch nur unsichtbar seinen alten Platz reserviert, entsteht bei wachsendem Nachbarinhalt (hier: eine wachsende Adresse) unnötiger Leerraum in der Sektion.
+
+**Ursache:** Ein bereits vorhandener `<LocalizationItems>`-Eintrag für genau dieses Element (`Path="Visible"`, `Data="true"`) überschreibt das direkte `Visible`-Attribut — dieselbe Override-Mechanik, die für `HeightF`/`SizeF`/`LocationFloat` bereits bekannt ist (siehe `repx-technical-notes.md`, Abschnitt „Der `<Localization>`-Block"), hier erstmals konkret für `Visible` bestätigt. Ein einfaches Setzen des direkten Attributs allein reicht deshalb nicht aus. **Nicht zu verwechseln mit Eintrag 26:** Dort überschreibt ein `ExpressionBinding` den Design-Wert zur Laufzeit — hier überschreibt stattdessen ein `<LocalizationItems>`-Eintrag den Design-Wert bereits beim Laden/Anzeigen im Designer selbst. Beide Mechanismen vor einer Änderung getrennt prüfen, sie schließen sich nicht gegenseitig aus.
+
+**Fix:**
+1. Nicht nur das direkte `Visible`-Attribut setzen, sondern auch den zugehörigen `<LocalizationItems>`-Eintrag (`Path="Visible"`, `Component="#Ref-<RefDesElements>"`) auf denselben Wert (`Data="false"`) ändern — sonst bleibt die Designer-Anzeige/das Rendering beim alten Wert.
+2. Reicht das reine Unsichtbarmachen nicht aus, um den reservierten Platz zurückzugeben (Platzhalter bleibt trotz `Visible="false"` raumgreifend, vgl. Muster (i) für dieselbe Grundproblematik bei Bändern statt einzelnen Controls): Das Platzhalter-Element komplett entfernen — inklusive aller zugehörigen Kind-Elemente (`ExpressionBindings`, `StylePriority` u. ä.) UND aller seiner eigenen `<LocalizationItems>`-Einträge. Anschließend die betroffenen `ItemN`-Sammlungen lückenlos neu nummerieren (siehe `known-issues.md` Eintrag 22 — sonst werden nachfolgende Einträge stillschweigend wirkungslos).
+3. Den durch das Entfernen freigewordenen Platz gezielt einem oder mehreren fachlich sinnvollen Nachbar-Controls zuweisen, indem deren `<LocalizationItems>`-Eintrag für `SizeF`/`HeightF` (nicht das direkte Attribut, siehe Muster (i) Ursache 4) auf einen entsprechend größeren Wert gesetzt wird — bis maximal zur festen Höhe der umgebenden Sektion/des Bands.
+4. Ergebnis strukturell gegen eine bestätigte Referenzdatei prüfen (name-basiert, `Ref`-Werte ignorieren, siehe `known-issues.md` Eintrag 29), nicht nur optisch im Designer.
+
+**Wichtiger technischer Hinweis:** Dieser Fehler ist ohne den `<LocalizationItems>`-Abgleich nicht erkennbar — ein reiner Blick auf das direkte XML-Attribut täuscht einen bereits erfolgten Fix vor, obwohl die tatsächlich wirksame Eigenschaft (die Designer-Anzeige/das Rendering) noch den alten Wert nutzt. Kein automatisierter Check in `scripts/validate_repx.py` deckt diesen konkreten Fall ab (Kandidat für einen künftigen Check, der `Visible`-Attribute gegen `LocalizationItems`-Einträge desselben `Ref` abgleicht).
+
+**Automatisierungssicherheit:** *Vorschlag mit Rückfrage.* Das komplette Entfernen eines Controls (Fix-Schritt 2) sowie das Vergrößern von Nachbar-Controls (Fix-Schritt 3) sind strukturell eingreifend und reportspezifisch — nicht ohne Bestätigung blind auf andere Reports/Sektionen übertragen. Bei exakt diesem Report (`dxAio_template`, Sektion `Sub_Adresse`) gilt der Fix inzwischen als bestätigt und kann bei erneutem Auftreten direkt angewendet werden.
