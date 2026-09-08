@@ -248,6 +248,68 @@ def run(path, baseline_path=None):
     add('C15', 'work4all-log-Block vorhanden', has_log)
     add('C16', 'Anker-Zeile _work4allLogAnchor vorhanden', has_anchor and has_log)
 
+    # --- C20 Parameters-Block unveraendert (Kontrollpunkt seit 07.09.2026) ---
+    # Der Nutzer hat explizit gefordert, dass Parameter bei einem Fix NIE veraendert
+    # werden duerfen - konkreter Anlass: in einer Referenzdatei waren alle 8
+    # Parameter-Kategorie-Titel (LocalizationItems Path="Title") stillschweigend
+    # verschwunden (vermutlich Nebenwirkung eines Designer-Neu-Saves), siehe
+    # known-issues.md Eintrag 32. Nur mit --baseline pruefbar.
+    if base is not None:
+        def extract_block(x, tag):
+            s = x.find('<%s>' % tag)
+            if s == -1:
+                return None
+            e = x.find('</%s>' % tag, s)
+            return x[s:e + len(tag) + 3] if e != -1 else None
+        p_base, p_new = extract_block(base, 'Parameters'), extract_block(c, 'Parameters')
+        if p_base is None or p_new is None:
+            add('C20', 'Parameters-Block unveraendert (byte-identisch zur Baseline)', False,
+                'kein <Parameters>-Block gefunden (Basis oder Neu)')
+        else:
+            # Zusaetzlich gezielt auf die Title-Kategorien pruefen (das ist der bisher
+            # einzige real beobachtete Fehlermodus: Block-Attribute bleiben gleich, aber
+            # einzelne LocalizationItems-Eintraege gehen verloren) - siehe known-issues.md
+            # Eintrag 32. Titles liegen NICHT im <Parameters>-Block selbst, sondern im
+            # LocalizationItems-Hauptblock, daher separat pruefen.
+            titles_base = sorted(re.findall(r'Path="Title" Data="([^"]+)"', base))
+            titles_new = sorted(re.findall(r'Path="Title" Data="([^"]+)"', c))
+            lost_titles = [t for t in titles_base if t not in titles_new]
+            ok = (p_base == p_new) and not lost_titles
+            detail = []
+            if p_base != p_new:
+                detail.append('<Parameters>-Block unterscheidet sich von der Baseline')
+            if lost_titles:
+                detail.append('fehlende Parameter-Titel: %s' % lost_titles[:8])
+            add('C20', 'Parameters-Block unveraendert (byte-identisch zur Baseline)', ok, ' | '.join(detail))
+    else:
+        add('C20', 'Parameters-Block unveraendert (byte-identisch zur Baseline)', True,
+            'uebersprungen (keine Baseline)', warn=True)
+
+    # --- C21 Subreports vollstaendig eingebettet (Kontrollpunkt seit 07.09.2026) ---
+    # Der Nutzer hat explizit gefordert, dass Subreports bei einem Fix NIE veraendert
+    # werden duerfen - konkreter Anlass: nach einem frueheren Bugfix-Lauf waren
+    # Subreports beim Nutzer nicht mehr eingebettet. Prueft je XRSubreport-Control, dass
+    # die zugehoerige ReportSource ein eigenes <Bands>-Geruest traegt (nicht nur eine
+    # leere/kompilierte Huelle ohne Layout) - siehe known-issues.md Eintrag 33.
+    # ScriptsSource ist NICHT bei jedem Subreport vorhanden (manche brauchen legitim
+    # kein eigenes Skript) - das ist daher nur eine Detail-Info, kein Fail-Kriterium.
+    subreports = []
+    for m in re.finditer(r'<Item\d+ Ref="(\d+)" ControlType="XRSubreport" Name="(\w+)"', c):
+        ref, name = m.groups()
+        # <ReportSource> traegt eigene Attribute (Ref, ControlType, ScriptsSource, ...) -
+        # daher auf "<ReportSource " (mit Leerzeichen) matchen, nicht auf ein leeres Tag.
+        rs_m = re.search(r'<ReportSource[ >]', c[m.end():m.end() + 2000])
+        rs = m.end() + rs_m.start() if rs_m else -1
+        rs_end = c.find('</ReportSource>', rs) if rs != -1 else -1
+        window = c[rs:rs_end] if rs != -1 and rs_end != -1 else ''
+        has_bands = '<Bands>' in window
+        has_scripts = 'ScriptsSource="' in window
+        subreports.append((name, len(window), has_bands, has_scripts))
+    not_embedded = ['%s (%d Zeichen, Bands=%s, ScriptsSource=%s)' % (n, l, hb, hs)
+                    for n, l, hb, hs in subreports if l < 500 or not hb]
+    add('C21', 'Alle Subreports vollstaendig eingebettet (eigenes <Bands>-Geruest)',
+        not not_embedded, ('%d Subreports geprueft | ' % len(subreports)) + ' | '.join(not_embedded[:4]))
+
 def report():
     w = max(len(n) for _, n, _, _ in results)
     fails = 0

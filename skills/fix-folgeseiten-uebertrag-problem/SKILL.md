@@ -3,7 +3,7 @@ name: fix-folgeseiten-uebertrag-problem
 description: Diagnostiziert und repariert die Übertrag-/Folgeseiten-Unterdrückungslogik in DevExpress-XtraReports-.repx-Dateien vom work4all-Aio-Report-Typ (und strukturell ähnlichen Varianten). Unbedingt verwenden, wenn eine .repx-Datei hochgeladen wird und der Nutzer über eine fehlende oder falsche "Übertrag"-Zeile, verschwindende Tabellenüberschriften auf Folgeseiten, falsche sumCarryoverSum-Werte, Seitenumbruch-Probleme bei Positionstabellen, oder allgemein über "Report-Bugs"/"Fehler beim Druck von Angeboten/Rechnungen" bei work4all-Reports spricht — auch wenn nicht explizit "Übertrag" oder "Folgeseite" genannt wird, aber Symptome wie "Betrag stimmt nicht", "Kopfzeile fehlt auf Seite 2", "Summe zu früh/zu spät" beschrieben werden. Auch nutzen, wenn der Nutzer nach einer allgemeinen Aufräumung/Bereinigung ("Skript-Hygiene") des eingebetteten C#-Skripts in einer .repx-Datei fragt (tote Kommentare, leere Event-Handler).
 metadata:
   skill_id: DXJ0001
-  version: 1.8.0
+  version: 1.9.0
 ---
 
 # DevExpress .repx — Übertrag/Folgeseiten-Fix & Skript-Hygiene
@@ -36,7 +36,7 @@ Bevor irgendein inhaltlicher Fix (alles außer reiner Skript-Hygiene, Muster (e)
 
 ## Skill-ID, Version & Fix-Log
 
-Diese Skill trägt die ID **DXJ0001** (aktuell Version **1.8.0**). Format und vollständige Spezifikation des `work4all-log`-Blocks (inkl. `<Ergebnis>`-Feld, `<Übersprungen>`-Feld seit `(v3)`, Anker-Zeile seit Regel 8, Idempotenz-Check, Rückwärtskompatibilität zu älteren `(v1)`/`(v2)`-Blöcken) sind zentral dokumentiert in `work4all-reporting-skills:neuen-devexpress-report-skill-anlegen`, `../neuen-devexpress-report-skill-anlegen/references/fix-log-format.md` — dort auch die vollständige Registry aller vergebenen IDs (`../neuen-devexpress-report-skill-anlegen/references/skill-id-registry.md`). Wann und wie diese Skill den Block liest und beschreibt: siehe Schritt 7 „Log-Eintrag schreiben" im Arbeitsablauf unten.
+Diese Skill trägt die ID **DXJ0001** (aktuell Version **1.9.0**). Format und vollständige Spezifikation des `work4all-log`-Blocks (inkl. `<Ergebnis>`-Feld, `<Übersprungen>`-Feld seit `(v3)`, Anker-Zeile seit Regel 8, Idempotenz-Check, Rückwärtskompatibilität zu älteren `(v1)`/`(v2)`-Blöcken) sind zentral dokumentiert in `work4all-reporting-skills:neuen-devexpress-report-skill-anlegen`, `../neuen-devexpress-report-skill-anlegen/references/fix-log-format.md` — dort auch die vollständige Registry aller vergebenen IDs (`../neuen-devexpress-report-skill-anlegen/references/skill-id-registry.md`). Wann und wie diese Skill den Block liest und beschreibt: siehe Schritt 7 „Log-Eintrag schreiben" im Arbeitsablauf unten.
 
 **Wichtig für Schritt 5 (Skript-Hygiene):** Der `work4all-log`-Block sieht wie ein Kommentarblock aus, ist aber KEIN toter Kommentar — er darf von der Hygiene-Routine niemals entfernt werden, auch nicht als vermeintlich "wirkungsloser" Kommentar. Dasselbe gilt für die direkt danach stehende Anker-Zeile (`_work4allLogAnchor`) — sie sieht wie ungenutzter Code aus, ist aber technisch notwendig (siehe `fix-log-format.md`, Abschnitt „Überlebensfähigkeit bei einem Designer-Speichervorgang") und darf nicht als "totes Feld" entfernt werden. Vor jeder Hygiene-Passage explizit prüfen, dass Block und Anker-Zeile (erkennbar an der festen Marker-Zeile `=== work4all-log` bzw. am Bezeichner `_work4allLogAnchor`) unangetastet bleiben.
 
@@ -118,7 +118,7 @@ Seit v1.2.0 gehören zusätzlich vier konkrete, bestätigte Bereinigungsfälle d
 python3 "${CLAUDE_SKILL_DIR}/scripts/validate_repx.py" <bearbeitet.repx> --baseline <original.repx>
 ```
 
-Der Platzhalter `${CLAUDE_SKILL_DIR}` löst auf das Verzeichnis dieser SKILL.md auf — der Aufruf funktioniert damit unabhängig vom aktuellen Arbeitsverzeichnis. Es prüft die Checks `C01`–`C19` (u. a. BOM, XML-Wohlgeformtheit, Tag-Paarigkeit, lückenlose `ItemN`-Nummerierung, Ref-Eindeutigkeit, verwaiste `#Ref-`Verweise, Scripts-Verdrahtung, Klammern, `<Summary>`-Anzahl, Escaping, PrintOnPage-Flags in BeforePrint, `HeightF` in PrintOnPage, Debug-Reste, Log-Block + Anker-Zeile) und liefert Exit-Code 1 bei jedem FAIL. **Ebenfalls Pflicht: das Skript einmal auf der Referenzdatei selbst laufen lassen** (Selbst-Audit, Checkliste Punkt 11) — eine Diagnose-Zwischenfassung als Referenz fällt dabei sofort auf.
+Der Platzhalter `${CLAUDE_SKILL_DIR}` löst auf das Verzeichnis dieser SKILL.md auf — der Aufruf funktioniert damit unabhängig vom aktuellen Arbeitsverzeichnis. Es prüft die Checks `C01`–`C21` (u. a. BOM, XML-Wohlgeformtheit, Tag-Paarigkeit, lückenlose `ItemN`-Nummerierung, Ref-Eindeutigkeit, verwaiste `#Ref-`Verweise, Scripts-Verdrahtung, Klammern, `<Summary>`-Anzahl, Escaping, PrintOnPage-Flags in BeforePrint, `HeightF` in PrintOnPage, Debug-Reste, Log-Block + Anker-Zeile, seit v1.9.0 zusätzlich `C20` Parameters-Block unverändert und `C21` Subreports vollständig eingebettet) und liefert Exit-Code 1 bei jedem FAIL. **Ebenfalls Pflicht: das Skript einmal auf der Referenzdatei selbst laufen lassen** (Selbst-Audit, Checkliste Punkt 11) — eine Diagnose-Zwischenfassung als Referenz fällt dabei sofort auf.
 
 Meldet ein Check etwas, ohne dass ein echter Fehler vorliegt, wird der Check nachgeschärft und die Verschärfung in der Checkliste vermerkt — der Befund wird nicht ignoriert. So korrigiert sich der Ablauf über die Läufe hinweg selbst, statt dass derselbe Fehler erneut beim Kunden im Testdruck auffällt.
 
@@ -158,7 +158,7 @@ Wenn in diesem Lauf ein neues Muster, eine neue Falle oder eine überraschende D
 - `references/fix-catalog.md` — die bekannten Problem-Muster, ihre Ursache, der empfohlene Fix, und wie sicher es ist, ihn automatisch anzuwenden.
 - `references/validation-checklist.md` — die Checks, die vor jeder Auslieferung durchlaufen werden müssen.
 - `references/known-issues.md` — lebendes Dokument bekannter Fallen und Überraschungen, wächst mit jedem Lauf.
-- `scripts/validate_repx.py` — ausführbarer Check-Index (`C01`–`C19`) zu dieser Checkliste; Pflicht nach jeder Bearbeitungsrunde und als Selbst-Audit auf der Referenzdatei (siehe Schritt 6).
+- `scripts/validate_repx.py` — ausführbarer Check-Index (`C01`–`C21`) zu dieser Checkliste; Pflicht nach jeder Bearbeitungsrunde und als Selbst-Audit auf der Referenzdatei (siehe Schritt 6).
 - `../neuen-devexpress-report-skill-anlegen/references/fix-log-format.md` (in `neuen-devexpress-report-skill-anlegen`) — Spezifikation des `work4all-log`-Blocks inkl. Ergebnis-Werten (`geändert` / `keine Änderung nötig` / `abgebrochen: ...`), `<Übersprungen>`-Feld und der vollständigen Skill-ID-Registry, maßgeblich für Schritt 7.
 - `../neuen-devexpress-report-skill-anlegen/references/unterpunkt-ids.md` (in `neuen-devexpress-report-skill-anlegen`) — Format- und Vergaberegeln für Unterpunkt-IDs, maßgeblich für Schritt 3.
 

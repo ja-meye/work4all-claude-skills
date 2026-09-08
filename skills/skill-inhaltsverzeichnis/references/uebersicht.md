@@ -2,7 +2,7 @@
 
 Lebendes Dokument (analog zu `known-issues.md` der Fach-Skills) — bei jeder inhaltlichen Überarbeitung eines Verbesserungs-Skills wird diese Tabelle im selben Zug mitgepflegt (siehe `SKILL.md`, Schritt 2). Quelle der Wahrheit für den Inhalt jeder ID bleibt aber immer der jeweilige Fach-Skill (`fix-catalog.md` bzw. `SKILL.md`, Abschnitt „Unterpunkt-IDs") — diese Tabelle ist eine Kopie zur schnellen Übersicht, kein Ersatz.
 
-## DXJ0001 — `fix-folgeseiten-uebertrag-problem` (Verbesserungs-Typ, aktuell v1.8.0)
+## DXJ0001 — `fix-folgeseiten-uebertrag-problem` (Verbesserungs-Typ, aktuell v1.9.0)
 
 | ID | Kurzbeschreibung | Sicherheitsstufe |
 |----|----|----|

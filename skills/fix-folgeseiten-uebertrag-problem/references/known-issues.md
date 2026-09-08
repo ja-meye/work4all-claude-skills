@@ -39,6 +39,8 @@ Format pro Eintrag: **Was passiert ist → Was man daraus lernt → Wie man es k
 - 29. `.repx`-Dateien ausschließlich binär bearbeiten — Text-Mode-Lesen normalisiert CRLF unsichtbar
 - 30. `<LocalizationItems>` übersteuert auch `Visible`, nicht nur `HeightF`/`SizeF`/`LocationFloat`
 - 31. Eine im Designer bereits geöffnete Datei wird bei externer Änderung nicht automatisch neu geladen
+- 32. Parameter dürfen bei einem Referenz-Update nicht verändert werden — eine Referenzdatei verlor stillschweigend 8 Parameter-Kategorie-Titel
+- 33. Subreports müssen nach jedem Fix vollständig eingebettet bleiben — als eigener Kontrollpunkt, nicht nur beiläufig mitgeprüft
 
 ## 1. `sumCarryoverSum()` benötigt zwingend das `<Summary Running="Group">`-Element (entgegen der Doku-Erwartung)
 
@@ -386,3 +388,27 @@ Padding-Format ist `Left,Top,Right,Bottom,Dpi` — nur der zweite Wert (Top) wir
 **Was man daraus lernt:** Eine gemeldete „hat nicht funktioniert"-Rückmeldung ist nicht automatisch ein Beleg für einen tatsächlichen Fehler im ausgelieferten Fix — sie kann ebenso gut aus einem rein lokalen Anzeige-/Cache-Zustand auf Seiten des Nutzers stammen. Ein struktureller Vergleich gegen die zuvor als korrekt bestätigte Version ist der zuverlässigere erste Diagnoseschritt, bevor eine neue inhaltliche Fehlersuche begonnen wird.
 
 **Wie man es künftig vermeidet:** Bei einer „hat nicht funktioniert"-Meldung zuerst per struktureller Diff-Prüfung verifizieren, ob die ausgelieferte Datei tatsächlich vom erwarteten Zustand abweicht, bevor eine neue Fehlerursache gesucht wird. Stimmt der Inhalt bereits, den Nutzer aktiv bitten, die Datei im DevExpress Report Designer vollständig zu schließen und neu zu öffnen (bzw. die Designer-Anwendung neu zu starten), da ein bereits geöffnetes Dokument externe Änderungen nicht automatisch übernimmt.
+
+---
+
+## 32. Parameter dürfen bei einem Referenz-Update nicht verändert werden — eine Referenzdatei verlor stillschweigend 8 Parameter-Kategorie-Titel
+
+**Wann aufgefallen:** 07.09.2026, Report `dxAio_template` (M001), beim Kundenreport-Bugfix gegen die Referenzversion `_10-44`.
+
+**Was passiert ist:** Beim strukturellen Abgleich des Kundenreports gegen die als aktuell bestätigte Referenzdatei fiel auf, dass in der Referenzdatei alle 8 `<LocalizationItems>`-Einträge vom Typ `Path="Title"` für die Parameter-Panel-Kategorien (`General`, `Auftragsvarianten`, `Design`, `CurrentTenant`, `SettingsLogo`, `SettingAdresslineAndFooter`, `MwSt`, `Debug Parameter`) fehlten (0/8) — obwohl die zugehörigen `ParameterPanelLayoutItems`-Gruppen selbst unverändert vorhanden waren und der komplette `<Parameters>`-Block sonst intakt war. In der Kundendatei waren alle 8 Titel vorhanden und korrekt. Der Verlust ist vermutlich bei einem der vorangegangenen Designer-Neu-Saves der Referenzdatei entstanden (siehe Eintrag 7 zu rein kosmetischer Umsortierung von `Path="Title"`-Einträgen bei genau dieser Art von Speichervorgang) — diesmal aber offenbar nicht nur umsortiert, sondern tatsächlich verloren.
+
+**Was man daraus lernt:** Eine Referenzdatei kann durch einen ganz gewöhnlichen Designer-Speichervorgang unbemerkt Parameter-Metadaten verlieren, ohne dass Layout, Skript oder gedrucktes Ergebnis sich sichtbar ändern — der Verlust fällt nur auf, wenn ausdrücklich der `<Parameters>`-Block bzw. die zugehörigen `LocalizationItems` gegen eine ältere, bestätigte Fassung gezählt/verglichen werden. Ohne diesen gezielten Vergleich hätte der Fehler sich unbemerkt in jede künftige Referenzversion fortgepflanzt.
+
+**Wie man es künftig vermeidet:** Neuer, dauerhafter Kontrollpunkt (auf ausdrücklichen Wunsch des Nutzers, 07.09.2026): Bei jedem Bugfix-Lauf UND bei jedem Referenz-Update wird geprüft, dass der komplette `<Parameters>`-Block der Kundendatei gegenüber ihrer eigenen Baseline unverändert (byte-identisch) bleibt, und dass keine `Path="Title"`-Einträge gegenüber der vorherigen Referenzversion verloren gehen. Automatisiert als Check `C20` in `scripts/validate_repx.py` (seit v1.9.0). Siehe auch `validation-checklist.md` Punkt 18.
+
+---
+
+## 33. Subreports müssen nach jedem Fix vollständig eingebettet bleiben — als eigener Kontrollpunkt, nicht nur beiläufig mitgeprüft
+
+**Wann aufgefallen:** 07.09.2026, Report `dxAio_template` (M001), im selben Lauf wie Eintrag 32.
+
+**Was passiert ist:** Der Nutzer wies bei diesem Lauf ausdrücklich darauf hin, dass bei einem früheren Bugfix-Durchlauf Subreports zwischenzeitlich nicht mehr vollständig eingebettet waren (kein eigenes `<Bands>`-Gerüst mehr im `<ReportSource>`-Element), und verlangte, dies künftig als eigenen, dauerhaften Kontrollpunkt zu führen — nicht nur implizit über den allgemeinen Struktur-Diff. Im aktuellen Lauf waren alle 5 Subreports des Kundenreports (`SubReportPosBilder`, `SubReport_Signatur`, `SubReport_Summen`, `SubReport_TeilrechnungsPositionen`, `SubReport_Teilrechnungslogik_AN_AB`) byte-identisch zum Original und vollständig eingebettet — der Kontrollpunkt bestätigte hier also einen bereits korrekten Zustand, statt einen neuen Fehler zu finden.
+
+**Was man daraus lernt:** Ein `XRSubreport`-Control kann grundsätzlich auf zwei Arten befüllt sein: mit einem vollständig eingebetteten `<Bands>`-Gerüst (eigene Controls, Scripts, LocalizationItems) oder mit einem bloßen Verweis auf eine externe/kompilierte Report-Klasse ohne eigenes Bands-Gerüst (siehe auch Eintrag zur `DXWebAIO.SubReportXXX`-Umstellung durch einen DLL-Build in `Changelog_REFERENZ_2026-09-07_10-44.md`). Beide Zustände können syntaktisch gültiges, ladbares XML ergeben — ein bloßer „lädt fehlerfrei"-Test deckt einen unbeabsichtigten Übergang vom eingebetteten in den Nicht-eingebetteten Zustand nicht auf.
+
+**Wie man es künftig vermeidet:** Neuer, dauerhafter Kontrollpunkt (auf ausdrücklichen Wunsch des Nutzers, 07.09.2026): Bei jedem Bugfix-Lauf wird für jedes `XRSubreport`-Control im Report geprüft, dass sein `<ReportSource>` weiterhin ein eigenes, hinreichend umfangreiches `<Bands>`-Gerüst enthält (nicht nur ein leerer oder sehr kurzer Verweis). Automatisiert als Check `C21` in `scripts/validate_repx.py` (seit v1.9.0) — `ScriptsSource` wird dabei nur informativ mitgemeldet, da mindestens ein legitimer Subreport-Typ in dieser Report-Familie ohne eigenes eingebettetes Skript arbeitet (bestätigt: `SubReport_Teilrechnungslogik_AN_AB`). Siehe auch `validation-checklist.md` Punkt 19.
