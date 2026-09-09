@@ -1,0 +1,14 @@
+{
+  "skills": [
+    "kurz-und-langtext-einarbeiten"
+  ],
+  "query": "Bitte fuege die Kurz-/Langtext-Umschaltung aus dem anderen Report auch hier ein.",
+  "files": [
+    "<repx-datei-deren-bestehende-Kurztext-Formel-die-Liste-(0,-10,-2,-3,-12,-13)-verwendet>"
+  ],
+  "expected_behavior": [
+    "Erkennt die Abweichung zur dokumentierten Liste (0, -10, -24) und fragt aktiv nach, welche Liste gelten soll, statt sie stillschweigend zu aendern oder zu uebernehmen",
+    "Wendet Formel A/B/C erst nach Klaerung dieser Rueckfrage an, mit der vom Nutzer bestaetigten Liste konsistent in allen drei Formeln",
+    "Dokumentiert die getroffene Entscheidung im Abschlussbericht und im Changelog"
+  ]
+}

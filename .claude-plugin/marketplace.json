@@ -16,7 +16,8 @@
         "./skills/fix-folgeseiten-uebertrag-problem",
         "./skills/neuen-devexpress-listenreport-bauen",
         "./skills/neuen-devexpress-report-skill-anlegen",
-        "./skills/skill-inhaltsverzeichnis"
+        "./skills/skill-inhaltsverzeichnis",
+        "./skills/kurz-und-langtext-einarbeiten"
       ]
     }
   ]

@@ -1,0 +1,17 @@
+{
+  "skills": [
+    "kurz-und-langtext-einarbeiten"
+  ],
+  "query": "Bitte baue in diesen Report die Moeglichkeit ein, wahlweise Kurztext oder Langtext plus Bemerkung anzudrucken, gesteuert ueber einen Parameter.",
+  "files": [
+    "<repx-datei-mit-Sub_POS-Band-und-identischer-Feldstruktur-wie-dxAio_template>"
+  ],
+  "expected_behavior": [
+    "Fragt vor der Umsetzung optional nach einer Referenzdatei (dxAio_template_new.repx von Ploner), blockiert aber nicht, wenn keine vorliegt",
+    "Prueft die im Zielreport tatsaechlich verwendete ArtikelArt-Liste, statt (0, -10, -24) blind zu uebernehmen",
+    "Legt den Parameter ArgKurzLangtext als Boolean mit Default No an",
+    "Uebernimmt Formel A/B/C als zusammengehoerige Einheit, nicht isoliert",
+    "Spielt die Wahrheitstabelle (alle vier Kombinationen) durch, bevor die Aenderung als abgeschlossen gemeldet wird",
+    "Liefert das Ergebnis unter einem neuen, zeitgestempelten Dateinamen aus"
+  ]
+}

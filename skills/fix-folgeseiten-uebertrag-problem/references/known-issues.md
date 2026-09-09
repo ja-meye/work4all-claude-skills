@@ -41,6 +41,8 @@ Format pro Eintrag: **Was passiert ist → Was man daraus lernt → Wie man es k
 - 31. Eine im Designer bereits geöffnete Datei wird bei externer Änderung nicht automatisch neu geladen
 - 32. Parameter dürfen bei einem Referenz-Update nicht verändert werden — eine Referenzdatei verlor stillschweigend 8 Parameter-Kategorie-Titel
 - 33. Subreports müssen nach jedem Fix vollständig eingebettet bleiben — als eigener Kontrollpunkt, nicht nur beiläufig mitgeprüft
+- 34. SKILL.md verwies noch auf „Muster (a) bis (e)" statt auf den vollständigen Katalog — dadurch wurden bereits bestätigte Muster (g) Punkt 3, (h) Punkt 2 und (j) bei einem frischen Kundenreport übersehen
+- 35. `tb_ÜbertragOben`-Laufzeithöhe (Muster g/i) war mit 50 zu niedrig bemessen — vom Kunden per Testdruck auf 70 korrigiert
 
 ## 1. `sumCarryoverSum()` benötigt zwingend das `<Summary Running="Group">`-Element (entgegen der Doku-Erwartung)
 
@@ -216,6 +218,8 @@ Padding-Format ist `Left,Top,Right,Bottom,Dpi` — nur der zweite Wert (Top) wir
 **Wie man es künftig vermeidet:** Diese vier Zellen sind für DIESEN Report konkret bestätigt — bei einer neuen Report-Variante mit strukturell anderen Namen ist das Muster (Top-Padding der ersten Zeile jedes direkt auf `Sub_POS` folgenden `SubBand`) zu übertragen, aber die betroffenen Zellnamen und der genaue Top-Wert müssen für den jeweiligen Report neu bestätigt werden, nicht blind mit `10` übernommen werden. Siehe `fix-catalog.md` Muster (h) für die verhaltensbasierte Beschreibung.
 
 **Automatisierungssicherheit:** *Vorschlag mit Rückfrage*, außer bei exakt diesem Report + exakt diesen vier Zellnamen, wo es nach dieser Bestätigung als **automatisch sicher** gelten kann (analog zur Regelung bei Muster (g)).
+
+**Update 08.09.2026:** Der oben für `dxAio_template` konkret genannte Wert `10` ist inzwischen überholt — der in der seit 07.09.2026 gültigen Referenz bestätigte Wert für genau diese vier Zellen ist **`5`**, nicht `10` (vermutlich in einer zwischenzeitlichen Designer-Iteration angepasst). Bestätigt exakt dieses Werts: Bugfix-Lauf `dxAio_template`, 08.09.2026. Dies ist ein Beleg für den in Eintrag 27 formulierten Grundsatz — eine Aussage über einen Wert wird an der jeweils aktuellen Datei verifiziert, nicht aus einem älteren Eintrag hier übernommen. Für genau diesen Report gilt ab sofort `5` als bestätigter Wert; bei einer neuen Report-Variante weiterhin unabhängig neu bestätigen.
 
 ---
 
@@ -412,3 +416,40 @@ Padding-Format ist `Left,Top,Right,Bottom,Dpi` — nur der zweite Wert (Top) wir
 **Was man daraus lernt:** Ein `XRSubreport`-Control kann grundsätzlich auf zwei Arten befüllt sein: mit einem vollständig eingebetteten `<Bands>`-Gerüst (eigene Controls, Scripts, LocalizationItems) oder mit einem bloßen Verweis auf eine externe/kompilierte Report-Klasse ohne eigenes Bands-Gerüst (siehe auch Eintrag zur `DXWebAIO.SubReportXXX`-Umstellung durch einen DLL-Build in `Changelog_REFERENZ_2026-09-07_10-44.md`). Beide Zustände können syntaktisch gültiges, ladbares XML ergeben — ein bloßer „lädt fehlerfrei"-Test deckt einen unbeabsichtigten Übergang vom eingebetteten in den Nicht-eingebetteten Zustand nicht auf.
 
 **Wie man es künftig vermeidet:** Neuer, dauerhafter Kontrollpunkt (auf ausdrücklichen Wunsch des Nutzers, 07.09.2026): Bei jedem Bugfix-Lauf wird für jedes `XRSubreport`-Control im Report geprüft, dass sein `<ReportSource>` weiterhin ein eigenes, hinreichend umfangreiches `<Bands>`-Gerüst enthält (nicht nur ein leerer oder sehr kurzer Verweis). Automatisiert als Check `C21` in `scripts/validate_repx.py` (seit v1.9.0) — `ScriptsSource` wird dabei nur informativ mitgemeldet, da mindestens ein legitimer Subreport-Typ in dieser Report-Familie ohne eigenes eingebettetes Skript arbeitet (bestätigt: `SubReport_Teilrechnungslogik_AN_AB`). Siehe auch `validation-checklist.md` Punkt 19.
+
+---
+
+## 34. SKILL.md verwies noch auf „Muster (a) bis (e)" statt auf den vollständigen Katalog — dadurch wurden bereits bestätigte Muster übersehen
+
+**Wann aufgefallen:** 08.09.2026, Report `dxAio_template` (M001), unmittelbar nach dem Lauf vom 07.09.2026.
+
+**Was passiert ist:** Der Nutzer meldete zehn fehlende Punkte in der am 07.09. ausgelieferten Kundendatei. Bei der Nachprüfung stellte sich heraus: Neun der zehn Punkte waren keine neuen Funde, sondern bereits im Fix-Katalog dokumentierte, für genau diesen Report als „automatisch sicher" eingestufte Muster — konkret Muster (g) Punkt 3 (zweite Zeile in `xrTable1`/`Sub_POS` löschen), Muster (h) Punkt 2 (Folge-Padding auf den SubBand-Zellen nach `Sub_POS`, nicht nur an `tbl00` selbst) und Muster (j)/`DXJ0001.I` (unsichtbaren Platzhalter `xrLabel19` entfernen, Nachbar-Controls `xrLabel9`/`lblAdresse` vergrößern). Der Katalog selbst führt diese Muster korrekt bis (j) (siehe dessen „Inhalt"-Verzeichnis). SKILL.md Schritt 2 wies jedoch beim Diagnose-Schritt seit einer älteren Fassung noch wörtlich an: „Gehe die dort beschriebenen Muster (a) bis (e) systematisch durch" — ein Rest aus der Zeit, bevor die Katalog-Einträge (f) bis (j) ergänzt wurden, der nie mitgezogen wurde. Der Lauf vom 07.09. folgte dieser (fehlerhaften) Anweisung wörtlich und prüfte die Kundendatei dadurch nur gegen einen Teil des tatsächlich verfügbaren, bereits bestätigten Katalogs. Zusätzlich wurden die dadurch übersehenen Differenzen beim strukturellen Diff fälschlich als „unrelated evolution"/„andere, parallele Feature-Arbeit" eingestuft und explizit ausgeschlossen, statt zuerst gegen den vollständigen Katalog geprüft zu werden.
+
+**Was man daraus lernt:** Eine Freitextangabe eines Zahlen-/Buchstabenbereichs („(a) bis (e)") in einer Ablaufanweisung veraltet lautlos, sobald der referenzierte Katalog wächst — es gibt keinen Mechanismus, der eine solche Bereichsangabe automatisch mitzieht, und ein Diagnose-Schritt, der sich exakt an die Anweisung hält, wird dadurch unbemerkt unvollständig. Das Symptom ist besonders tückisch, weil die Diagnose selbst sauber und begründet wirkt (die gefundenen Differenzen werden ja bewusst geprüft und dokumentiert als „ausgeschlossen"), nur eben mit einer von vornherein zu kleinen Grundgesamtheit.
+
+**Wie man es künftig vermeidet:** SKILL.md Schritt 2 verweist jetzt (seit v1.10.0) nicht mehr auf einen konkreten Buchstabenbereich, sondern ausdrücklich auf „ausnahmslos alle im Fix-Katalog beschriebenen Muster — siehe dessen eigenes „Inhalt"-Verzeichnis für die verbindliche, immer aktuelle Liste". Damit zeigt SKILL.md nur noch auf die Quelle der Wahrheit (das „Eine Quelle je Information"-Prinzip aus der SKILL.md-Einleitung), statt den Umfang selbst ein zweites Mal zu beziffern. Allgemeiner: Jede künftige Ablaufanweisung, die auf eine wachsende Liste/einen wachsenden Katalog verweist, sollte „alle" statt eines konkreten Bereichs sagen, oder zumindest bei jeder Katalog-Erweiterung (Schritt 9) explizit mitgeprüft werden. Zusätzlich: Eine im Diff gefundene Differenz wird erst dann als „nicht bestätigtes, unrelated Feature" eingestuft und ausgeschlossen, wenn sie nachweislich gegen JEDES Muster im Katalog geprüft wurde — vorher ist „passt zu keinem bekannten Muster" keine gültige Schlussfolgerung.
+
+---
+
+## 35. `tb_ÜbertragOben`-Laufzeithöhe (Muster g/i) war mit 50 zu niedrig bemessen — vom Kunden per Testdruck auf 70 korrigiert
+
+**Wann aufgefallen:** 08.09.2026, Report `dxAio_template`, unabhängig vom Bugfix-Lauf zur Kundendatei — Meldung bezieht sich direkt auf die bestätigte Referenzdatei.
+
+**Was passiert ist:** Der Kunde teilte den konkreten Sollzustand des tabelleneigenen `BeforePrint`-Handlers `tb_ÜbertragOben_BeforePrint` mit:
+
+```csharp
+private void tb_ÜbertragOben_BeforePrint(object sender, System.ComponentModel.CancelEventArgs e) {
+    var tbl = (DevExpress.XtraReports.UI.XRTable)sender;
+    tbl.HeightF = (pageCounter == 1) ? 1f : 70f;
+}
+```
+
+Ein struktureller Vergleich mit der aktuell bestätigten Referenzdatei (`dxAio_template_REFERENZ_2026-09-07_17-21.repx`) zeigte: Der Handler existiert dort bereits — inklusive korrekter XML-Verdrahtung (`<Scripts OnBeforePrint="tb_ÜbertragOben_BeforePrint" OnPrintOnPage="tb_ÜbertragOben_PrintOnPage" />` als direktes Kind-Element der Tabelle, nach `<Rows>`/`<StylePriority>`) — und ist strukturell exakt analog zum bereits länger bekannten `tb_Überschriften_Folgeseite_BeforePrint` aufgebaut (`(pageCounter == 1) ? 1f : 60f`). Der einzige Unterschied zum vom Kunden gewünschten Zustand: Der Laufzeitwert stand auf **50f**, nicht auf **70f**. Der Seite-1-Zweig (`1f`) war bereits korrekt und unverändert.
+
+Eine erste Vermutung, der Handler existiere im Skill-/Referenzwissen noch gar nicht (weil `tb_ÜbertragOben_BeforePrint` in `fix-catalog.md`/`known-issues.md` bis dahin nirgends als eigener Methodenname vorkam, sondern nur `tb_ÜbertragOben` als Tabellenname im Kontext einer reinen Design-Höhe, Muster (g) Punkt 2), erwies sich bei genauerem Nachsehen als falsch: Eine erste Suche hatte nur den ersten `<Scripts>`-Treffer nach dem Namens-Attribut gefunden — das war die Verdrahtung eines verschachtelten `XRLabel` (`TXT_Uebertrag_oben`, eigener Handler `TXT_Uebertrag_oben_BeforePrint`), nicht die der Tabelle selbst. Die tabelleneigene `<Scripts>`-Verdrahtung sitzt strukturbedingt weiter hinten im Element (nach `</Rows>`, vor `</Item1>`) und wurde dadurch beim ersten Scan übersprungen.
+
+Der Wert **50** war der 04.09.2026 in Muster (g)/(i) dokumentierte, damals bestätigte Laufzeitwert (ursprünglich als Design-Höhe vom Kunden am 28.08. manuell 40→50 erhöht, siehe Eintrag 6/Muster g — und mit Einführung von Muster (i) vom Design in die Laufzeit gewandert). Beim jetzigen Testdruck erwies sich dieser Wert als zu niedrig; bestätigt korrekt ist **70**.
+
+**Was man daraus lernt:** Zwei Lehren. Erstens (Suchmethodik): Bei mehreren gleich- oder ähnlich benannten `<Scripts>`-Elementen im selben XML-Subbaum (Tabelle + verschachtelte Zellen/Labels) reicht ein einfacher `find()` nach dem ersten Treffer nicht — die tabelleneigene Verdrahtung kann strukturell deutlich hinter der ihrer Kind-Elemente liegen. Vor der Aussage „X existiert nicht" muss der vollständige Elementbereich (hier: bis zum eigenen schließenden Tag der Tabelle) durchsucht werden, nicht nur der Bereich bis zum nächsten zufälligen Treffer desselben Tag-Namens. Zweitens (Inhalt): Ein in `fix-catalog.md` als „bestätigt" dokumentierter Zahlenwert ist eine Momentaufnahme des Kundenfeedbacks zum Zeitpunkt der Dokumentation, kein dauerhaft feststehender Fakt — bei jedem neuen Testdruck-Feedback des Kunden entscheidet der aktuelle, vom Kunden mitgeteilte oder in einer neu bestätigten Referenzdatei stehende Wert, nicht die bisherige Dokumentation (vgl. bereits Eintrag 15/34 zur Padding-Top-Korrektur).
+
+**Wie man es künftig vermeidet:** Bei der Suche nach einer Methoden-Verdrahtung (`<Scripts>`) im XML immer den gesamten Elementbereich des fraglichen Controls durchsuchen (z. B. mit einer tiefenbewussten Tag-Span-Extraktion, siehe `repx-technical-notes.md`), nicht nur bis zum ersten Treffer desselben Tag-Namens — insbesondere bei Tabellen mit vielen verschachtelten Zellen/Labels, die eigene `<Scripts>`-Elemente tragen können. `fix-catalog.md` Muster (g) Punkt 2 auf den aktuell bestätigten Wert **70** aktualisiert (siehe dortige Aktualisierungs-Notiz). Bei einer künftigen erneuten Korrektur dieses Werts: dieselbe Stelle erneut aktualisieren, nicht einen weiteren, konkurrierenden known-issues-Eintrag mit dem dann veralteten Wert stehen lassen.

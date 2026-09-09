@@ -1,0 +1,17 @@
+{
+  "skills": [
+    "fix-folgeseiten-uebertrag-problem"
+  ],
+  "query": "Wende den Uebertrag-/Folgeseiten-Bugfix auf diesen frischen Kundenreport an. Referenzdatei liegt bei.",
+  "files": [
+    "<frischer-kundenreport-ohne-vorherige-fixes>",
+    "<bestaetigte-referenz-repx>"
+  ],
+  "expected_behavior": [
+    "Prueft die Kundendatei beim strukturellen Diff gegen die Referenz gegen ausnahmslos ALLE im Fix-Katalog beschriebenen Muster (aktuell (a) bis (j)), nicht nur die zum gemeldeten Symptom (Uebertrag/Folgeseiten) offensichtlich passenden",
+      "Erkennt und wendet auch strukturell unscheinbare, aber bereits als 'automatisch sicher bei bestaetigter Referenz' eingestufte Muster an, ohne dass der Nutzer sie einzeln benennen muss - insbesondere Muster (g) Punkt 3 (ueberzaehlige Tabellenzeile), Muster (h) Punkt 2 (Folge-Padding auf allen betroffenen SubBand-Zellen, nicht nur an der Ursache-Zelle selbst) und Muster (j) (unsichtbarer Platzhalter + Nachbar-Vergroesserung)",
+    "Stuft eine gefundene Differenz zur Referenz erst dann als 'nicht bestaetigt'/'unrelated evolution' ein und schliesst sie aus, wenn sie nachweislich gegen jedes Katalog-Muster geprueft wurde - nicht vorschnell aufgrund oberflaechlicher Aehnlichkeit zu einem DLL-Build-Artefakt oder einer Sprachvariante",
+    "Nennt in der Befund-Vorschau (Schritt 3) alle zutreffenden Unterpunkt-IDs, auch wenn mehrere davon nichts mit dem urspruenglich gemeldeten Symptom zu tun haben",
+    "Leitet numerische Zielwerte (z.B. Padding-Top) aus der AKTUELLEN Referenzdatei ab, nicht aus einem aelteren Wert in known-issues.md oder fix-catalog.md, falls beide widersprechen"
+  ]
+}

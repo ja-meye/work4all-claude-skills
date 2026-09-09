@@ -1,0 +1,15 @@
+{
+  "skills": [
+    "kurz-und-langtext-einarbeiten"
+  ],
+  "query": "Nach dem Einbau erscheint bei manchen Positionen der Text zweimal untereinander, wenn ArgKurzLangtext auf True steht.",
+  "files": [
+    "<bereits-mit-dieser-skill-bearbeitete-repx-mit-vermuteter-doppelung>"
+  ],
+  "expected_behavior": [
+    "Identifiziert als Ursache typischerweise eine fehlende oder falsch platzierte Trim(...)<>Trim(...)-Pruefung zwischen Kurztext und Bezeichnung in Formel B/C",
+    "Spielt gezielt den Grenzfall 'Kurztext vorhanden aber identisch mit Bezeichnung' durch (siehe validierung-kurz-langtext.md Punkt 2)",
+    "Schlaegt die Korrektur als zusammengehoerige Anpassung aller betroffenen Formeln vor, nicht nur einer einzelnen",
+    "Liefert die Korrektur unter neuem Zeitstempel aus und ergaenzt known-issues.md um den konkreten Fall"
+  ]
+}
