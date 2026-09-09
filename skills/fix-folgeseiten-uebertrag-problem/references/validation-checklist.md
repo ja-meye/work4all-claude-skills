@@ -40,9 +40,13 @@ Verpflichtend vor jeder Auslieferung einer bearbeiteten `.repx`. Jeder einzelne 
 18. **Parameter dürfen durch den Bugfix bzw. ein Referenz-Update nicht verändert werden.** Der komplette `<Parameters>`-Block der Kundendatei muss gegenüber ihrer eigenen Baseline byte-identisch bleiben, und bei jedem Referenz-Update dürfen gegenüber der vorherigen Referenzversion keine `Path="Title"`-Einträge (Parameter-Kategorie-Titel) verloren gehen. Anlass: Eine als aktuell bestätigte Referenzdatei hatte bei einem früheren Designer-Neu-Save unbemerkt alle 8 Kategorie-Titel verloren, ohne dass Layout, Skript oder Druckbild sich sichtbar änderten. Siehe `known-issues.md` Eintrag 32.
 19. **Subreports müssen nach jedem Fix vollständig eingebettet bleiben.** Für jedes `XRSubreport`-Control prüfen, dass sein `<ReportSource>` weiterhin ein eigenes, hinreichend umfangreiches `<Bands>`-Gerüst enthält (Controls/Scripts/LocalizationItems), statt auf einen bloßen Verweis ohne eigene Struktur reduziert zu sein. `ScriptsSource` ist dabei nur informativ, da mindestens ein legitimer Subreport-Typ in dieser Report-Familie ohne eigenes eingebettetes Skript arbeitet. Anlass: Bei einem früheren Bugfix-Durchlauf waren Subreports zwischenzeitlich nicht mehr vollständig eingebettet. Siehe `known-issues.md` Eintrag 33.
 
+## 20. Neuer Pflicht-Kontrollpunkt seit 09.09.2026
+
+20. **Jedes direkte Kind eines Sammlungs-Eltern-Tags (`Controls`, `Rows`, `Cells`, `LocalizationItems`, `ExpressionBindings`, `Bands`, `Parameters`, `ParameterPanelLayoutItems`, `StyleSheet`) muss exakt dem Muster `ItemN` entsprechen — kein Platzhalter-Name wie `ItemPLACEHOLDER`.** Ein davon abweichender Tag-Name ergibt weiterhin wohlgeformtes XML (Punkt 1 bleibt grün) und wird auch von der lückenlosen `ItemN`-Prüfung (Punkt 13) nicht erfasst, weil diese nur bereits auf `Item\d+` passende Namen zählt — DevExpress verwirft ein so benanntes Kind beim Laden aber vollständig und stillschweigend. Anlass: Drei beim Anlegen neuer `LocalizationItems`-Einträge als `<ItemPLACEHOLDER ...>` statt `<ItemN ...>` geschriebene Einträge gingen dadurch beim Laden verloren und wurden bei einem späteren Rebuild derselben Sammlung endgültig gelöscht. Siehe `known-issues.md` Eintrag 37.
+
 ## Automatisierter Check-Index: `scripts/validate_repx.py`
 
-Alle Punkte dieser Checkliste sind in `scripts/validate_repx.py` als ausführbare Checks `C01`–`C21` hinterlegt (seit v1.9.0: `C20` für Punkt 18, `C21` für Punkt 19). Aufruf:
+Alle Punkte dieser Checkliste sind in `scripts/validate_repx.py` als ausführbare Checks `C01`–`C22` hinterlegt (seit v1.9.0: `C20` für Punkt 18, `C21` für Punkt 19; seit v1.11.0: `C22` für Punkt 20). Aufruf:
 
 ```bash
 python3 scripts/validate_repx.py <bearbeitet.repx> --baseline <original.repx>

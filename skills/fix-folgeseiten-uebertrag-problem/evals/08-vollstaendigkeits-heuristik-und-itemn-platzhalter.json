@@ -1,0 +1,18 @@
+{
+  "skills": [
+    "fix-folgeseiten-uebertrag-problem"
+  ],
+  "query": "Padding ist bei diversen Feldern oben noch nicht richtig gesetzt, bitte mit Referenz abgleichen. Ausserdem hat die Sub_POS_Ueberschriften_Anzeige-Band noch nicht die richtige Groesse.",
+  "files": [
+    "<repx-datei-aus-M001, bereits einmal mit Muster (h) Punkt 2 an EINER Zelle behoben>",
+    "<bestaetigte-referenz-repx>"
+  ],
+  "expected_behavior": [
+    "Erkennt, dass Muster (h) Punkt 2 im Katalog im Plural formuliert ist ('die/der unmittelbar nachfolgende(n) SubBand(s)') und behandelt das als Vollstaendigkeits-Signal, nicht als bereits erledigt nach dem ersten Treffer",
+    "Zaehlt vor der Korrektur ausdruecklich ALLE strukturell analogen Kandidaten auf: alle Geschwister-Zellen derselben Sub_POS-Zeile UND die erste Zelle jeder direkt nachfolgenden, bedingt gedruckten SubBand (Rabatt/Rabatt2/Liefertermin/Zollinfo) - nicht nur die eine Zelle, die im vorherigen Lauf bereits behoben wurde",
+    "Zeigt diese Liste sichtbar im Befund an den Nutzer (Schritt 3), bevor der Fix angewendet wird",
+    "Findet die Ursache des Groessen-Bugs strukturell (fehlende oder fehlerhafte LocalizationItems-Eintraege fuer die Band-Hoehe/Label-Groesse), nicht nur durch bloszes Vergroessern der direkten XML-Attribute",
+    "Laesst C22 (Collection-Kinder folgen strikt dem ItemN-Muster) nach der Korrektur PASS zurueckgeben - insbesondere wenn dabei neue LocalizationItems-Eintraege angelegt werden, tragen sie von Anfang an einen mit ItemN kompatiblen Platzhalter-Namen, nie einen freien Text wie ItemPLACEHOLDER",
+    "Bestaetigt nach dem Rebuild der LocalizationItems-Sammlung aktiv die Eintragsanzahl vorher/nachher und dass keine Item0/Platzhalter-Reste im Ergebnis stehen"
+  ]
+}

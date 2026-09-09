@@ -310,6 +310,40 @@ def run(path, baseline_path=None):
     add('C21', 'Alle Subreports vollstaendig eingebettet (eigenes <Bands>-Geruest)',
         not not_embedded, ('%d Subreports geprueft | ' % len(subreports)) + ' | '.join(not_embedded[:4]))
 
+    # --- C22 Collection-Kinder folgen strikt dem ItemN-Muster ------------
+    # Anlass (known-issues.md Eintrag 37): ein Skript hat einer Sammlung ein neues
+    # Kind-Element mit ungueltigem Tag-Namen hinzugefuegt (z.B. "<ItemPLACEHOLDER ...>"
+    # statt "<ItemN ...>"). Das ergibt weiterhin wohlgeformtes XML - C02/C03 schlagen
+    # nicht an - und C04 sieht die Luecke ebenfalls nicht, weil C04 nur Tag-Namen
+    # zaehlt, die BEREITS auf "Item\d+" passen. DevExpress selbst verwirft ein
+    # solches Kind beim Laden aber vollstaendig und stillschweigend (kein Fehler,
+    # keine Warnung - die Daten sind einfach weg). C22 prueft daher strukturell:
+    # jedes direkte Kind eines bekannten Sammlungs-Eltern-Tags MUSS exakt "ItemN"
+    # heissen, unabhaengig davon, ob eine Umnummerierungs-Regex es zufaellig erfasst
+    # haette. Die Menge COLLECTION_PARENTS wurde empirisch gegen referenz.repx
+    # geprueft (jedes dieser Tags hat dort ausschliesslich "Item1" als erstes Kind);
+    # "Styles" wurde bewusst NICHT aufgenommen, weil es in der Referenzdatei gar
+    # nicht vorkommt und daher nicht bestaetigt werden konnte - eine unbestaetigte
+    # Aufnahme wuerde ein Risiko fuer einen falschen FAIL auf legitimer Struktur sein.
+    COLLECTION_PARENTS = {'Controls', 'Rows', 'Cells', 'LocalizationItems',
+                          'ExpressionBindings', 'Bands', 'Parameters',
+                          'ParameterPanelLayoutItems', 'StyleSheet'}
+    stack, bad_children = [], []
+    for m in TAG_RE.finditer(c):
+        closing, name, attrs = m.group(1), m.group(2), m.group(3)
+        line = c.count('\n', 0, m.start()) + 1
+        if closing:
+            if stack:
+                stack.pop()
+            continue
+        if stack and stack[-1] in COLLECTION_PARENTS and not re.fullmatch(r'Item\d+', name):
+            bad_children.append('<%s> Zeile %d ist Kind von <%s>, aber kein ItemN'
+                                 % (name, line, stack[-1]))
+        if not attrs.endswith('/'):
+            stack.append(name)
+    add('C22', 'Collection-Kinder folgen strikt dem ItemN-Muster', not bad_children,
+        ' | '.join(bad_children[:5]))
+
 def report():
     w = max(len(n) for _, n, _, _ in results)
     fails = 0

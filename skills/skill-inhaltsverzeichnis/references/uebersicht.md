@@ -2,7 +2,7 @@
 
 Lebendes Dokument (analog zu `known-issues.md` der Fach-Skills) — bei jeder inhaltlichen Überarbeitung eines Verbesserungs-Skills wird diese Tabelle im selben Zug mitgepflegt (siehe `SKILL.md`, Schritt 2). Quelle der Wahrheit für den Inhalt jeder ID bleibt aber immer der jeweilige Fach-Skill (`fix-catalog.md` bzw. `SKILL.md`, Abschnitt „Unterpunkt-IDs") — diese Tabelle ist eine Kopie zur schnellen Übersicht, kein Ersatz.
 
-## DXJ0001 — `fix-folgeseiten-uebertrag-problem` (Verbesserungs-Typ, aktuell v1.10.1)
+## DXJ0001 — `fix-folgeseiten-uebertrag-problem` (Verbesserungs-Typ, aktuell v1.11.0)
 
 | ID | Kurzbeschreibung | Sicherheitsstufe |
 |----|----|----|
@@ -16,7 +16,7 @@ Lebendes Dokument (analog zu `known-issues.md` der Fach-Skills) — bei jeder in
 | `DXJ0001.H` | Batch-Sicherheits-Reset bei Sammeldruck mehrerer Belege in einem Lauf | Vorschlag mit Rückfrage* |
 | `DXJ0001.I` | Unsichtbarer Platzhalter mit falscher `Visible`-Localization entfernt, Nachbar-Controls auf freigewordenen Platz vergrößert | Vorschlag mit Rückfrage |
 
-**Prüfwerkzeug:** Alle Fixes dieses Skills werden mit `fix-folgeseiten-uebertrag-problem/scripts/validate_repx.py` abgesichert (Checks `C01`–`C19`, Exit-Code 1 bei FAIL) — verbindlich nach jeder Bearbeitungsrunde und zusätzlich als Selbst-Audit auf der verwendeten Referenzdatei.
+**Prüfwerkzeug:** Alle Fixes dieses Skills werden mit `fix-folgeseiten-uebertrag-problem/scripts/validate_repx.py` abgesichert (Checks `C01`–`C22`, Exit-Code 1 bei FAIL) — verbindlich nach jeder Bearbeitungsrunde und zusätzlich als Selbst-Audit auf der verwendeten Referenzdatei.
 
 **Konsistenz:** Diese Tabelle ist eine Kopie zur schnellen Übersicht. Dass sie nicht von der Quelle abweicht, prüfen die Checks `S11` (Unterpunkt-IDs) und `S12` (Versionsangabe) in `../neuen-devexpress-report-skill-anlegen/scripts/lint_skills.py` — genau diese Tabelle war schon zweimal veraltet.
 

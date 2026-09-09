@@ -3,7 +3,7 @@ name: fix-folgeseiten-uebertrag-problem
 description: Diagnostiziert und repariert die Übertrag-/Folgeseiten-Unterdrückungslogik in DevExpress-XtraReports-.repx-Dateien vom work4all-Aio-Report-Typ (und strukturell ähnlichen Varianten). Unbedingt verwenden, wenn eine .repx-Datei hochgeladen wird und der Nutzer über eine fehlende oder falsche "Übertrag"-Zeile, verschwindende Tabellenüberschriften auf Folgeseiten, falsche sumCarryoverSum-Werte, Seitenumbruch-Probleme bei Positionstabellen, oder allgemein über "Report-Bugs"/"Fehler beim Druck von Angeboten/Rechnungen" bei work4all-Reports spricht — auch wenn nicht explizit "Übertrag" oder "Folgeseite" genannt wird, aber Symptome wie "Betrag stimmt nicht", "Kopfzeile fehlt auf Seite 2", "Summe zu früh/zu spät" beschrieben werden. Auch nutzen, wenn der Nutzer nach einer allgemeinen Aufräumung/Bereinigung ("Skript-Hygiene") des eingebetteten C#-Skripts in einer .repx-Datei fragt (tote Kommentare, leere Event-Handler).
 metadata:
   skill_id: DXJ0001
-  version: 1.10.1
+  version: 1.11.0
 ---
 
 # DevExpress .repx — Übertrag/Folgeseiten-Fix & Skript-Hygiene
@@ -36,7 +36,7 @@ Bevor irgendein inhaltlicher Fix (alles außer reiner Skript-Hygiene, Muster (e)
 
 ## Skill-ID, Version & Fix-Log
 
-Diese Skill trägt die ID **DXJ0001** (aktuell Version **1.10.1**). Format und vollständige Spezifikation des `work4all-log`-Blocks (inkl. `<Ergebnis>`-Feld, `<Übersprungen>`-Feld seit `(v3)`, Anker-Zeile seit Regel 8, Idempotenz-Check, Rückwärtskompatibilität zu älteren `(v1)`/`(v2)`-Blöcken) sind zentral dokumentiert in `work4all-reporting-skills:neuen-devexpress-report-skill-anlegen`, `../neuen-devexpress-report-skill-anlegen/references/fix-log-format.md` — dort auch die vollständige Registry aller vergebenen IDs (`../neuen-devexpress-report-skill-anlegen/references/skill-id-registry.md`). Wann und wie diese Skill den Block liest und beschreibt: siehe Schritt 7 „Log-Eintrag schreiben" im Arbeitsablauf unten.
+Diese Skill trägt die ID **DXJ0001** (aktuell Version **1.11.0**). Format und vollständige Spezifikation des `work4all-log`-Blocks (inkl. `<Ergebnis>`-Feld, `<Übersprungen>`-Feld seit `(v3)`, Anker-Zeile seit Regel 8, Idempotenz-Check, Rückwärtskompatibilität zu älteren `(v1)`/`(v2)`-Blöcken) sind zentral dokumentiert in `work4all-reporting-skills:neuen-devexpress-report-skill-anlegen`, `../neuen-devexpress-report-skill-anlegen/references/fix-log-format.md` — dort auch die vollständige Registry aller vergebenen IDs (`../neuen-devexpress-report-skill-anlegen/references/skill-id-registry.md`). Wann und wie diese Skill den Block liest und beschreibt: siehe Schritt 7 „Log-Eintrag schreiben" im Arbeitsablauf unten.
 
 **Wichtig für Schritt 5 (Skript-Hygiene):** Der `work4all-log`-Block sieht wie ein Kommentarblock aus, ist aber KEIN toter Kommentar — er darf von der Hygiene-Routine niemals entfernt werden, auch nicht als vermeintlich "wirkungsloser" Kommentar. Dasselbe gilt für die direkt danach stehende Anker-Zeile (`_work4allLogAnchor`) — sie sieht wie ungenutzter Code aus, ist aber technisch notwendig (siehe `fix-log-format.md`, Abschnitt „Überlebensfähigkeit bei einem Designer-Speichervorgang") und darf nicht als "totes Feld" entfernt werden. Vor jeder Hygiene-Passage explizit prüfen, dass Block und Anker-Zeile (erkennbar an der festen Marker-Zeile `=== work4all-log` bzw. am Bezeichner `_work4allLogAnchor`) unangetastet bleiben.
 
@@ -81,6 +81,8 @@ Lies `references/fix-catalog.md`. Gehe **ausnahmslos alle dort beschriebenen Mus
 
 **Verbindlich seit v1.10.0 (siehe `known-issues.md` Eintrag 34):** Eine Differenz zwischen Kundendatei und Referenz nicht vorschnell als „unrelated evolution" / „andere, parallele Feature-Arbeit" abtun, bevor sie gegen JEDES Muster im Katalog geprüft wurde — mehrere Muster (u. a. (g) Punkt 3, (h) Punkt 2, (j)) sind für strukturell nahe Reports bereits als „automatisch sicher" eingestuft und werden bei einem frischen Kundenreport leicht übersehen, wenn die Diagnose nur auf das gemeldete Symptom fokussiert.
 
+**Vollständigkeits-Heuristik (verbindlich seit v1.11.0, siehe `known-issues.md` Eintrag 36):** Formuliert ein zutreffender Katalog-Eintrag im Plural oder mit einer Alle-Formulierung — „die/der unmittelbar nachfolgende(n) SubBand(s)", „alle betroffenen Zellen/Controls", „jede/r ..." — ist das ein Vollständigkeits-Signal, kein Stilmittel. Am ersten gefundenen, zum gemeldeten Symptom passenden Treffer wird in diesem Fall NICHT aufgehört: Vor Anwendung des Fixes werden ausdrücklich alle strukturell analogen Kandidaten aufgezählt (z. B. alle Geschwister-Zellen derselben Tabellenzeile, alle direkt nachfolgenden gleichartigen SubBands) und einzeln gegen die Referenz geprüft. Diese Aufzählung erscheint als sichtbare Liste im Befund an den Nutzer (Schritt 3), damit eine unvollständige Behebung schon vor der Auslieferung auffällt, nicht erst beim nächsten Kunden-Testdruck. Diese Regel ergänzt die Regel von v1.10.0 (die verhindert, dass ganze Katalog-Einträge übersehen werden) um die enger gefasste Ebene darunter: auch INNERHALB eines bereits erkannten Musters wird nicht vorzeitig abgebrochen.
+
 Prüfe außerdem gegen `references/known-issues.md` — dort sammeln sich Fallen, die in früheren Läufen entdeckt wurden (aktuell v.a. die `sumCarryoverSum`/`Summary`-Falle). Diese Datei ist ein lebendes Dokument: wenn du in diesem Lauf etwas Neues entdeckst, das über den bisherigen Katalog hinausgeht, ergänze sie am Ende (Schritt 9).
 
 **Es ist ein vollständig gültiges Ergebnis dieses Schritts, dass kein einziges Muster zutrifft.** Wenn die Diagnose sauber durchlaufen wurde (auch nach einem strukturellen Diff gegen eine vorliegende Referenzdatei) und keiner der Katalog-Einträge greift, wird nichts konstruiert, um trotzdem etwas zu "finden" — das Ergebnis ist dann `keine Änderung nötig` (siehe Schritt 7) und genauso wertvoll wie ein gefundener Fix, weil es dem Nutzer bestätigt, dass die Datei geprüft wurde.
@@ -112,7 +114,7 @@ Seit v1.2.0 gehören zusätzlich vier konkrete, bestätigte Bereinigungsfälle d
 - Reine Debug-String-Ausgaben ohne produktiven Zweck entfernen (Beispiel: `_dbgHelper`-artige Felder, die kein sichtbares Control liest).
 - Lange Fließtext-Kommentare auf das Wesentliche kürzen (stichpunktartig, Kernaussage erhalten) — außer dem `work4all-log`-Block selbst, der nie gekürzt/entfernt wird.
 
-### Schritt 6 — Validierung
+### Schritt 6a — Validierung
 
 **Zuerst das automatisierte Prüfskript laufen lassen — nach JEDER Bearbeitungsrunde, nicht nur am Ende:**
 
@@ -120,13 +122,32 @@ Seit v1.2.0 gehören zusätzlich vier konkrete, bestätigte Bereinigungsfälle d
 python3 "${CLAUDE_SKILL_DIR}/scripts/validate_repx.py" <bearbeitet.repx> --baseline <original.repx>
 ```
 
-Der Platzhalter `${CLAUDE_SKILL_DIR}` löst auf das Verzeichnis dieser SKILL.md auf — der Aufruf funktioniert damit unabhängig vom aktuellen Arbeitsverzeichnis. Es prüft die Checks `C01`–`C21` (u. a. BOM, XML-Wohlgeformtheit, Tag-Paarigkeit, lückenlose `ItemN`-Nummerierung, Ref-Eindeutigkeit, verwaiste `#Ref-`Verweise, Scripts-Verdrahtung, Klammern, `<Summary>`-Anzahl, Escaping, PrintOnPage-Flags in BeforePrint, `HeightF` in PrintOnPage, Debug-Reste, Log-Block + Anker-Zeile, seit v1.9.0 zusätzlich `C20` Parameters-Block unverändert und `C21` Subreports vollständig eingebettet) und liefert Exit-Code 1 bei jedem FAIL. **Ebenfalls Pflicht: das Skript einmal auf der Referenzdatei selbst laufen lassen** (Selbst-Audit, Checkliste Punkt 11) — eine Diagnose-Zwischenfassung als Referenz fällt dabei sofort auf.
+Der Platzhalter `${CLAUDE_SKILL_DIR}` löst auf das Verzeichnis dieser SKILL.md auf — der Aufruf funktioniert damit unabhängig vom aktuellen Arbeitsverzeichnis. Es prüft die Checks `C01`–`C22` (u. a. BOM, XML-Wohlgeformtheit, Tag-Paarigkeit, lückenlose `ItemN`-Nummerierung, Ref-Eindeutigkeit, verwaiste `#Ref-`Verweise, Scripts-Verdrahtung, Klammern, `<Summary>`-Anzahl, Escaping, PrintOnPage-Flags in BeforePrint, `HeightF` in PrintOnPage, Debug-Reste, Log-Block + Anker-Zeile, seit v1.9.0 zusätzlich `C20` Parameters-Block unverändert und `C21` Subreports vollständig eingebettet, seit v1.11.0 zusätzlich `C22` Collection-Kinder folgen strikt dem `ItemN`-Muster) und liefert Exit-Code 1 bei jedem FAIL. **Ebenfalls Pflicht: das Skript einmal auf der Referenzdatei selbst laufen lassen** (Selbst-Audit, Checkliste Punkt 11) — eine Diagnose-Zwischenfassung als Referenz fällt dabei sofort auf.
 
 Meldet ein Check etwas, ohne dass ein echter Fehler vorliegt, wird der Check nachgeschärft und die Verschärfung in der Checkliste vermerkt — der Befund wird nicht ignoriert. So korrigiert sich der Ablauf über die Läufe hinweg selbst, statt dass derselbe Fehler erneut beim Kunden im Testdruck auffällt.
 
 Arbeite anschließend `references/validation-checklist.md` vollständig ab, bevor irgendetwas ausgeliefert wird. Das ist nicht optional — mehrere der Fehler, die in früheren Läufen passiert sind (verwaiste XML-Verdrahtung, versehentlich entfernte Summary-Elemente), wurden ausschließlich durch diese Checks gefangen, nicht durch bloßes Lesen des Diffs.
 
 Konnte ein einzelner Validierungs-Check aus irgendeinem Grund nicht durchgeführt werden (z.B. technische Einschränkung der Umgebung), wird das **nicht stillschweigend übersprungen** — als offener Punkt im Statusbericht in Schritt 8 aufführen.
+
+### Schritt 6b — Zwei-Rollen-QS-Schleife (Builder/Reviewer, PFLICHT seit v1.11.0)
+
+**Anlass:** Mehrere Läufe an `dxAio_template` (siehe `known-issues.md` Einträge 34, 36, 37) lieferten Ergebnisse aus, die Schritt 6a formal bestanden hatten (0 FAIL), aber dennoch unvollständig oder fehlerhaft waren — nicht weil ein Check fehlte, sondern weil derselbe Akteur, der die Diagnose gestellt und die Fixes angewendet hatte, auch die Vollständigkeit der eigenen Diagnose beurteilte. Ein automatisiertes Prüfskript fängt nur, was es kennt (siehe `C22`); es fängt nicht, dass eine Katalog-Formulierung im Plural nur zur Hälfte umgesetzt wurde. Auf ausdrücklichen Nutzerwunsch (09.09.2026) gibt es deshalb zusätzlich zu Schritt 6a eine zweite, unabhängige Prüfrolle, bevor ausgeliefert wird.
+
+**Ablauf:** Nachdem Schritt 6a durchlaufen ist (0 FAIL, alle WARN gelesen und begründet), aber **bevor** Schritt 7/8 (Log-Eintrag, Auslieferung) beginnt:
+
+1. **Rolle 1 (Builder)** — das ist der bisherige Ablauf dieser Skill (Schritte 1–6a) — stellt der **Rolle 2 (Reviewer)** ausschließlich Rohmaterial zur Verfügung: die bearbeitete `.repx`, die Baseline-`.repx`, die Referenz-`.repx` (falls vorhanden) und den Fix-Katalog/known-issues.md. **Nicht** übergeben werden die eigene Diagnose-Zusammenfassung, der Changelog-Entwurf oder eine Liste „das habe ich schon geprüft" — der Reviewer soll unabhängig zum eigenen Ergebnis kommen, nicht die Builder-Annahmen nur gegenlesen.
+2. Rolle 2 wird über das `Agent`-Tool als **frischer Subagent ohne Konversationskontext** gestartet (kein `SendMessage` an eine bestehende Builder-Instanz — der Reviewer darf die Denkspur des Builders nicht kennen). Der Prompt an den Reviewer verlangt explizit:
+   - die volle Diagnose aus Schritt 2 unabhängig neu durchzuführen (alle Muster (a)–(j) gegen die bearbeitete Datei UND, falls vorhanden, gegen die Referenz),
+   - bei jedem zutreffenden Muster mit Plural-/Alle-Formulierung ausdrücklich die Vollständigkeits-Heuristik anzuwenden (alle strukturell analogen Kandidaten einzeln aufzuzählen und zu prüfen, nicht nur den ersten),
+   - `scripts/validate_repx.py` (inkl. `C22`) selbst erneut auszuführen, nicht nur das Builder-Ergebnis zu übernehmen,
+   - mindestens eine gezielte XML-Stichprobe direkt im Rohtext zu machen (z. B. die tatsächlich geänderten `Ref`-Elemente aufsuchen und den resultierenden Tag-Namen/Attributwert lesen), statt sich ausschließlich auf Skript-Ausgaben zu verlassen.
+3. Weicht das Reviewer-Ergebnis vom Builder-Ergebnis ab (fehlender Fund, unvollständig umgesetztes Plural-Muster, Validierungs-FAIL, XML-Stichprobe zeigt einen anderen Wert als erwartet): **zurück an Rolle 1** — die Abweichung wird als neuer Befund behandelt (zurück zu Schritt 3/4), behoben, und Schritt 6a **und** 6b laufen erneut. Diese Schleife wiederholt sich, bis der Reviewer keine Abweichung mehr findet.
+4. Erst wenn Rolle 2 ein sauberes Ergebnis bestätigt, geht es weiter zu Schritt 7 (Log-Eintrag) und Schritt 8 (Auslieferung).
+
+**Im Statusbericht an den Nutzer (Schritt 8) wird die QS-Schleife immer erwähnt:** wie viele Durchläufe nötig waren, und falls mehr als einer, welche Abweichung(en) der Reviewer jeweils gefunden hat. Ein einzelner sauberer Durchlauf wird knapp bestätigt („Zwei-Rollen-QS-Schleife: 1 Durchlauf, keine Abweichung"), keine Abweichung wird stillschweigend verschwiegen. Das Ergebnis der Schleife selbst gehört NICHT in den festen `work4all-log`-Block (der hat ein fixes 6-Feld-Format, siehe `fix-log-format.md`) — es gehört in den Changelog des jeweiligen Laufs und, falls relevant, in den projektweiten Statusbericht.
+
+**Ausnahme:** Bei einem Lauf mit Ergebnis `keine Änderung nötig` (kein einziges Muster traf zu, siehe Schritt 2) entfällt Schritt 6b — es gibt nichts, dessen Vollständigkeit ein Reviewer prüfen müsste. Bei einem Lauf, der ausschließlich Skript-Hygiene (`DXJ0001.C`) ohne inhaltliche Fixes durchführt, entfällt Schritt 6b ebenfalls; sobald mindestens ein inhaltlicher Fix (jedes andere Muster) angewendet wurde, ist Schritt 6b PFLICHT.
 
 ### Schritt 7 — Log-Eintrag schreiben
 
@@ -160,7 +181,7 @@ Wenn in diesem Lauf ein neues Muster, eine neue Falle oder eine überraschende D
 - `references/fix-catalog.md` — die bekannten Problem-Muster, ihre Ursache, der empfohlene Fix, und wie sicher es ist, ihn automatisch anzuwenden.
 - `references/validation-checklist.md` — die Checks, die vor jeder Auslieferung durchlaufen werden müssen.
 - `references/known-issues.md` — lebendes Dokument bekannter Fallen und Überraschungen, wächst mit jedem Lauf.
-- `scripts/validate_repx.py` — ausführbarer Check-Index (`C01`–`C21`) zu dieser Checkliste; Pflicht nach jeder Bearbeitungsrunde und als Selbst-Audit auf der Referenzdatei (siehe Schritt 6).
+- `scripts/validate_repx.py` — ausführbarer Check-Index (`C01`–`C22`) zu dieser Checkliste; Pflicht nach jeder Bearbeitungsrunde und als Selbst-Audit auf der Referenzdatei (siehe Schritt 6a).
 - `../neuen-devexpress-report-skill-anlegen/references/fix-log-format.md` (in `neuen-devexpress-report-skill-anlegen`) — Spezifikation des `work4all-log`-Blocks inkl. Ergebnis-Werten (`geändert` / `keine Änderung nötig` / `abgebrochen: ...`), `<Übersprungen>`-Feld und der vollständigen Skill-ID-Registry, maßgeblich für Schritt 7.
 - `../neuen-devexpress-report-skill-anlegen/references/unterpunkt-ids.md` (in `neuen-devexpress-report-skill-anlegen`) — Format- und Vergaberegeln für Unterpunkt-IDs, maßgeblich für Schritt 3.
 
