@@ -1,0 +1,17 @@
+{
+  "skills": [
+    "fix-folgeseiten-uebertrag-problem"
+  ],
+  "query": "Im Band Sub_POS_Ueberschriften_Folgeseiten hatten die Hilfslabels lblDocGesamtGesPreis, lblCarryHelperOben und xrLabel45 nicht Height=5, das fuehrt beim Drucken zu zusaetzlichem Abstand. Bitte pruefen und beheben.",
+  "files": [
+    "<repx-datei-aus-M001, Band bereits per Muster (i) gesplittet>"
+  ],
+  "expected_behavior": [
+    "Wendet Muster (i) Punkt 4 an, beschraenkt sich dabei aber NICHT auf neu angelegte Helper-Controls",
+    "Zaehlt vor Abschluss die vollstaendige <Controls>-Sammlung des Anzeige-Bands auf und prueft jedes Kind-Control einzeln (direktes Attribut UND <Localization>-Eintrag)",
+    "Erkennt auch bereits vorher vorhandene Geschwister-Controls (nicht nur im selben Lauf neu erzeugte) als betroffen, wenn sie unabhaengig persistierte Hoehen ueber dem Minimalwert tragen",
+    "Setzt die Hoehe aller betroffenen Controls auf den erzwungenen Minimalwert (effektiv 5)",
+    "Listet die geprueften Controls sichtbar im Befund an den Nutzer auf, bevor der Fix angewendet wird",
+    "validate_repx.py meldet 0 FAIL"
+  ]
+}

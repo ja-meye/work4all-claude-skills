@@ -1,8 +1,8 @@
 # Evaluations — `fix-folgeseiten-uebertrag-problem`
 
-Acht Szenarien, jedes aus einem **real aufgetretenen** Fehlerfall dieses Skills abgeleitet
-(Sitzungen 03.–09.09.2026, Report `dxAio_template`; Hintergrund je Fall in `references/known-issues.md`,
-Einträge 22–37). Jedes Szenario beschreibt in `expected_behavior`, woran ein korrekter Lauf zu
+Neun Szenarien, jedes aus einem **real aufgetretenen** Fehlerfall dieses Skills abgeleitet
+(Sitzungen 03.–10.09.2026, Report `dxAio_template`; Hintergrund je Fall in `references/known-issues.md`,
+Einträge 22–39). Jedes Szenario beschreibt in `expected_behavior`, woran ein korrekter Lauf zu
 erkennen ist — nicht, welche Formulierung er benutzt.
 
 | Datei | Prüft | known-issues |
@@ -15,6 +15,7 @@ erkennen ist — nicht, welche Formulierung er benutzt.
 | `06-visible-localization-override.json` | `LocalizationItems` übersteuert `Visible`, Muster (j) vollständig inkl. binärsicherer Bearbeitung | 29, 30, 31 |
 | `07-vollstaendiger-katalog-check.json` | Diagnose prüft gegen ausnahmslos alle Katalog-Muster (a)–(j), keine vorschnelle „unrelated evolution"-Einstufung | 34 |
 | `08-vollstaendigkeits-heuristik-und-itemn-platzhalter.json` | Plural-/Alle-Formulierung im Katalog erfasst ALLE strukturell analogen Kandidaten, nicht nur den ersten Treffer; neue `LocalizationItems`-Einträge tragen von Anfang an einen `ItemN`-kompatiblen Platzhalter-Namen | 36, 37 |
+| `09-vorbestehende-geschwister-controls.json` | Muster (i) Punkt 4 erfasst auch bereits vorher vorhandene Geschwister-Controls im selben Band, nicht nur im selben Schritt neu angelegte Helper-Controls | 39 |
 
 **Verwendung:** Mit dem `skill-creator`-Skill als Eval-Suite ausführen, oder manuell: Szenario-Query
 mit einer passenden Testdatei stellen und das Ergebnis gegen `expected_behavior` abgleichen.

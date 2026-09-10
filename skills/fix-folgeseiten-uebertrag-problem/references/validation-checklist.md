@@ -44,9 +44,13 @@ Verpflichtend vor jeder Auslieferung einer bearbeiteten `.repx`. Jeder einzelne 
 
 20. **Jedes direkte Kind eines Sammlungs-Eltern-Tags (`Controls`, `Rows`, `Cells`, `LocalizationItems`, `ExpressionBindings`, `Bands`, `Parameters`, `ParameterPanelLayoutItems`, `StyleSheet`) muss exakt dem Muster `ItemN` entsprechen — kein Platzhalter-Name wie `ItemPLACEHOLDER`.** Ein davon abweichender Tag-Name ergibt weiterhin wohlgeformtes XML (Punkt 1 bleibt grün) und wird auch von der lückenlosen `ItemN`-Prüfung (Punkt 13) nicht erfasst, weil diese nur bereits auf `Item\d+` passende Namen zählt — DevExpress verwirft ein so benanntes Kind beim Laden aber vollständig und stillschweigend. Anlass: Drei beim Anlegen neuer `LocalizationItems`-Einträge als `<ItemPLACEHOLDER ...>` statt `<ItemN ...>` geschriebene Einträge gingen dadurch beim Laden verloren und wurden bei einem späteren Rebuild derselben Sammlung endgültig gelöscht. Siehe `known-issues.md` Eintrag 37.
 
+## 21. Neuer Pflicht-Kontrollpunkt seit 10.09.2026
+
+21. **Bei Anwendung von Muster (i) Punkt 4 (Mindesthöhen absenken): die komplette `<Controls>`-Sammlung des betroffenen Anzeige-Bands durchgehen, nicht nur die im selben Schritt neu angelegten Elemente.** Für jedes Kind-Control einzeln die wirksame Höhe prüfen (direktes Attribut UND `<Localization>`-Eintrag, Punkt „Localization-Block" in `repx-technical-notes.md`) und als sichtbare Liste im Befund an den Nutzer aufführen. Anlass: Ein Fix-Lauf hatte nur ein neu angelegtes Helper-Control auf die Minimalhöhe abgesenkt; zwei bereits vorher im selben Band vorhandene Geschwister-Controls (`xrLabel45`, `lblCarryHelperOben`) blieben unangetastet und erzeugten beim Testdruck zusätzlichen Abstand. Kein automatisierter Check deckt diesen Fall ab (ein Control, das schon vorher korrekt und vollständig im XML stand, ist für `validate_repx.py` nicht von einem absichtlich groß belassenen Control zu unterscheiden) — reine Sichtprüfung, verbindlich Teil des Befunds. Siehe `known-issues.md` Eintrag 39.
+
 ## Automatisierter Check-Index: `scripts/validate_repx.py`
 
-Alle Punkte dieser Checkliste sind in `scripts/validate_repx.py` als ausführbare Checks `C01`–`C22` hinterlegt (seit v1.9.0: `C20` für Punkt 18, `C21` für Punkt 19; seit v1.11.0: `C22` für Punkt 20). Aufruf:
+Alle Punkte dieser Checkliste sind in `scripts/validate_repx.py` als ausführbare Checks `C01`–`C22` hinterlegt (seit v1.9.0: `C20` für Punkt 18, `C21` für Punkt 19; seit v1.11.0: `C22` für Punkt 20; Punkt 21 seit v1.12.0 ist eine reine Sichtprüfung ohne automatisierten Check, siehe dortige Begründung). Aufruf:
 
 ```bash
 python3 scripts/validate_repx.py <bearbeitet.repx> --baseline <original.repx>
