@@ -1,0 +1,6 @@
+# Referenz-Reports enthalten internes DB-Schema/SQL-Business-Logik und werden
+# bei Bedarf im Chat bereitgestellt statt im Repository gespeichert.
+# (Die Dateien liegen im Cowork-Plugin-Paket bei, werden aber nicht ins lokale
+# GitHub-Repo gespiegelt — gleiche Konvention wie kurz-und-langtext-einarbeiten
+# und fix-folgeseiten-uebertrag-problem.)
+*.repx

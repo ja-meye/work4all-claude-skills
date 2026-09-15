@@ -17,7 +17,8 @@
         "./skills/neuen-devexpress-listenreport-bauen",
         "./skills/neuen-devexpress-report-skill-anlegen",
         "./skills/skill-inhaltsverzeichnis",
-        "./skills/kurz-und-langtext-einarbeiten"
+        "./skills/kurz-und-langtext-einarbeiten",
+        "./skills/ub-landscape-konfigurieren"
       ]
     }
   ]

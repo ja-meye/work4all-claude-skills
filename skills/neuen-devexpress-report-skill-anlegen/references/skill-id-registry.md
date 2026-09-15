@@ -26,8 +26,9 @@ Jeder Autor führt seinen eigenen Nummernkreis (Autoren-Kürzel + Nummer ist ein
 | DXJ0003   | neuen-devexpress-report-skill-anlegen      | Meta-Skill     | Jens  | 2026-08-30  | 0.8.0   |
 | DXJ0004   | skill-inhaltsverzeichnis                   | Dokumentation  | Jens  | 2026-09-03  | 1.0.3   |
 | DXJ0005   | kurz-und-langtext-einarbeiten              | Erweiterung    | Jens  | 2026-09-09  | 1.0.0   |
+| DXJ0006   | ub-landscape-konfigurieren                 | Erweiterung    | Jens  | 2026-09-15  | 1.0.0   |
 
-Nächste freie Nummer für Jens: **DXJ0006**.
+Nächste freie Nummer für Jens: **DXJ0007**.
 
 ## Unterpunkt-IDs
 

@@ -1,0 +1,17 @@
+{
+  "skills": [
+    "ub-landscape-konfigurieren"
+  ],
+  "query": "Nach der Umstellung meines Unterberichts auf Querformat wird vor der Unterbericht-Seite eine leere Seite gedruckt. Bitte beheben.",
+  "files": [
+    "<repx-datei-mit-GenerateOwnPages-Landscape-Unterbericht-und-PageBreak-BeforeBand-auf-der-Host-Band>"
+  ],
+  "expected_behavior": [
+    "Erkennt das Muster aus bekannter Falle 1: GenerateOwnPages=true kombiniert mit PageBreak=BeforeBand auf derselben Host-Band",
+    "Erklaert die Ursache (doppelter Seitenumbruch) statt nur das Symptom zu kaschieren",
+    "Prueft vor dem Entfernen, ob die Host-Band neben dem XRSubreport noch sichtbaren eigenen Inhalt enthaelt (Sicherheitsstufe 2 falls ja)",
+    "Entfernt PageBreak=BeforeBand als automatisch sicheren Fix, wenn die Band nur unsichtbaren/Marker-Inhalt enthaelt",
+    "Liefert das Ergebnis unter einem neuen, zeitgestempelten Dateinamen aus",
+    "Ergaenzt keine unnoetigen Aenderungen an GenerateOwnPages oder Landscape selbst"
+  ]
+}

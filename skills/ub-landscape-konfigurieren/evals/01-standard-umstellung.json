@@ -1,0 +1,18 @@
+{
+  "skills": [
+    "ub-landscape-konfigurieren"
+  ],
+  "query": "Bitte stelle den Unterbericht SubReport_Leistungsnachweis in diesem Report auf Querformat um, er soll auf eigenen Seiten gedruckt werden.",
+  "files": [
+    "<repx-datei-mit-Hochformat-XRSubreport-und-eigenem-ReportSource>"
+  ],
+  "expected_behavior": [
+    "Bietet optional einen Baseline-Check mit fix-folgeseiten-uebertrag-problem an, blockiert aber nicht bei Ablehnung",
+    "Gleicht die mitgelieferten Referenzdateien optional strukturell gegen den Zielreport ab",
+    "Setzt GenerateOwnPages=true auf dem XRSubreport-Host-Control",
+    "Setzt Landscape=true im eingebetteten ReportSource und vertauscht PageWidthF/PageHeightF korrekt",
+    "Prueft die Host-Band auf PageBreak=BeforeBand und entfernt es, wenn die Band nur unsichtbaren Inhalt neben dem Unterbericht enthaelt",
+    "Empfiehlt nach der Umstellung einen mehrseitigen Testdruck mit echten Preisen als PDF statt nur Vorschau",
+    "Liefert das Ergebnis unter einem neuen, zeitgestempelten Dateinamen aus"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "skills": [
+    "ub-landscape-konfigurieren",
+    "fix-folgeseiten-uebertrag-problem"
+  ],
+  "query": "Seit ich einen Unterbericht auf Querformat mit eigenen Seiten umgestellt habe, fehlt auf Folgeseiten der Positionstabelle im Hauptbericht die wiederholte Kopfzeile und der Uebertrag-Betrag.",
+  "files": [
+    "<repx-datei-mit-kuerzlich-auf-landscape-umgestelltem-unterbericht>"
+  ],
+  "expected_behavior": [
+    "Fragt oder prueft zuerst, ob die Testdaten auf den betroffenen Positionen echte, von Null verschiedene Preise haben, bevor ein Bug angenommen wird",
+    "Fragt oder prueft, ob die verwendete Ansicht (Vorschau vs. PDF-Export) den Hauptbericht im Querformat-Teil abschneidet",
+    "Verweist auf known-issues.md Eintrag 1/2 (bestaetigter Fall an dxAio_template, der sich als Testdaten-/Vorschau-Artefakt herausstellte, kein echter Bug)",
+    "Baut KEINEN PageHeader-Kopie-Workaround, bevor ein Kontrolltest mit der Version vor der Landscape-Umstellung und sauberen Testdaten eine echte Regression bestaetigt hat",
+    "Zieht bei bestaetigter echter Regression den Skill fix-folgeseiten-uebertrag-problem zur eigentlichen Diagnose hinzu, statt selbst einen Workaround zu improvisieren"
+  ]
+}
