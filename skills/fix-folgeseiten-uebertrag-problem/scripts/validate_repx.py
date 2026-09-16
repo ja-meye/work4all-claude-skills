@@ -229,18 +229,29 @@ def run(path, baseline_path=None):
             ' | '.join(changes[:6]) + ('' if len(changes) <= 6 else ' | +%d weitere' % (len(changes) - 6)),
             warn=True)
 
-    # --- C19 work4all-log append-only ------------------------------------
-    # fix-log-format.md Regel 1: bestehende Log-Zeilen werden nie veraendert oder entfernt,
-    # nur angehaengt. Sichert insbesondere eine Kommentar-Kuerzung in der Live-Datei ab.
+    # --- C19 work4all-log: keine Skill-ID+Version-Kombination verloren ----
+    # fix-log-format.md Regel 1 (korrigiert 16.09.2026): pro Skill-ID+Version existiert
+    # hoechstens eine Zeile. Bei identischer Skill-ID+Version wird diese eine Zeile beim
+    # naechsten Lauf ERSETZT (neuer Zeitstempel/Ergebnis) - das ist kein Datenverlust und
+    # darf hier nicht als FAIL gemeldet werden. Verloren geht nur eine Zeile, deren
+    # Skill-ID+Version-Kombination in der neuen Datei ueberhaupt nicht mehr vorkommt (auch
+    # nicht mit aktualisiertem Zeitstempel/Ergebnis) - das faengt sowohl eine versehentlich
+    # geloeschte Zeile als auch eine unerlaubt veraenderte Skill-ID/Version ab (die alte
+    # Kombination verschwindet dann ja ebenfalls ersatzlos).
     if base is not None:
         b_raw, b_script = main_script(base)
         def logrows(x):
             m = re.search(r'// === work4all-log.*?// === end work4all-log ===', x or '', re.S)
             return [l.strip() for l in m.group(0).splitlines() if ' | ' in l] if m else []
+        def logkey(row):
+            # SkillID und Version sind die ersten beiden Pipe-getrennten Felder der Zeile
+            parts = [p.strip() for p in row.lstrip('/').strip().split('|')]
+            return (parts[0], parts[1]) if len(parts) >= 2 else (row, None)
         old_rows, new_rows = logrows(b_script), logrows(script)
-        lost = [r for r in old_rows if r not in new_rows]
-        add('C19', 'work4all-log append-only (keine Zeile verloren/veraendert)', not lost,
-            ('verloren: %s' % lost[:2]) if lost else '%d -> %d Zeilen' % (len(old_rows), len(new_rows)))
+        new_keys = {logkey(r) for r in new_rows}
+        lost_keys = [logkey(r) for r in old_rows if logkey(r) not in new_keys]
+        add('C19', 'work4all-log: keine Skill-ID+Version-Kombination verloren (Ersetzen bei identischer Version ist erlaubt)', not lost_keys,
+            ('verlorene Kombination(en): %s' % lost_keys[:3]) if lost_keys else '%d -> %d Zeilen' % (len(old_rows), len(new_rows)))
 
     # --- C15 work4all-log + Anker-Zeile ---------------------------------
     has_log = '=== work4all-log' in script

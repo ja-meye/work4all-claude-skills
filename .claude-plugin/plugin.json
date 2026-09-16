@@ -1,7 +1,7 @@
 {
   "name": "work4all-reporting-skills",
   "description": "work4all reporting and DevExpress skills",
-  "version": "1.19.0",
+  "version": "1.19.1",
   "skills": [
     "./skills/fix-folgeseiten-uebertrag-problem",
     "./skills/neuen-devexpress-listenreport-bauen",
